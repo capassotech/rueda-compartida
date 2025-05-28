@@ -1,4 +1,3 @@
-
 "use server";
 
 import { z } from "zod";
@@ -7,14 +6,14 @@ import { mockRides, mockRequests, generateRideId, generateRequestId } from "@/li
 import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 
-// Schemas
+// Esquemas
 const createRideSchemaServer = z.object({
   driverUid: z.string(),
   driverName: z.string(),
   origin: z.string().min(3),
   destination: z.string().min(3),
-  date: z.string(), // Expecting YYYY-MM-DD string from client
-  time: z.string(), // Expecting HH:MM string
+  date: z.string(), // Se espera una fecha en formato YYYY-MM-DD desde el cliente
+  time: z.string(), // Se espera una hora en formato HH:MM
   availableSeats: z.coerce.number().int().min(1),
   price: z.coerce.number().min(0),
 });
@@ -24,7 +23,7 @@ const requestRideSchemaServer = z.object({
   passengerUid: z.string(),
   passengerName: z.string(),
   driverUid: z.string(),
-  origin: z.string(), 
+  origin: z.string(),
   destination: z.string(),
   date: z.string(),
   time: z.string(),
@@ -33,7 +32,7 @@ const requestRideSchemaServer = z.object({
 
 const manageRequestSchemaServer = z.object({
   requestId: z.string(),
-  rideId: z.string(), // rideId is useful for updating available seats
+  rideId: z.string(), // rideId es útil para actualizar los lugares disponibles
   status: z.enum(['accepted', 'rejected']),
 });
 
@@ -45,29 +44,29 @@ export async function createRideAction(prevState: any, formData: FormData) {
 
     if (!validatedFields.success) {
       return {
-        message: "Invalid ride data.",
+        message: "Datos del viaje inválidos.",
         errors: validatedFields.error.flatten().fieldErrors,
         success: false,
       };
     }
     const rideInputData = validatedFields.data;
-    
+
     const newRide: Ride = {
       id: generateRideId(),
       ...rideInputData,
       createdAt: new Date(),
     };
     mockRides.push(newRide);
-    console.log("Mock DB: Creating ride", newRide);
+    console.log("Mock DB: Creando viaje", newRide);
 
-    revalidatePath('/dashboard/driver');
-    revalidatePath('/rides');
-    revalidatePath('/'); // Homepage might show ride counts or featured rides
+    revalidatePath('/dashboard/conductor');
+    revalidatePath('/viajes');
+    revalidatePath('/'); // La página principal podría mostrar recuentos o viajes destacados
 
-    return { message: "Ride created successfully!", success: true, rideId: newRide.id };
+    return { message: "Viaje creado exitosamente!", success: true, rideId: newRide.id };
   } catch (error) {
-    console.error("Error creating ride:", error);
-    return { message: "Failed to create ride.", success: false };
+    console.error("Error al crear el viaje:", error);
+    return { message: "No se pudo crear el viaje.", success: false };
   }
 }
 
@@ -78,46 +77,47 @@ export async function requestRideAction(prevState: any, formData: FormData) {
 
     if (!validatedFields.success) {
       return {
-        message: "Invalid request data.",
+        message: "Datos de solicitud inválidos.",
         errors: validatedFields.error.flatten().fieldErrors,
         success: false,
       };
     }
     const requestInputData = validatedFields.data;
 
-    // Check if ride exists and has seats
+    // Verificar si existe el viaje y tiene lugares
     const ride = mockRides.find(r => r.id === requestInputData.rideId);
     if (!ride) {
-      return { message: "Ride not found.", success: false };
-    }
-    // This check is also in RideCard, but good to have server-side too
-    if (ride.availableSeats <= 0) {
-        return { message: "No seats available for this ride.", success: false };
-    }
-    // Check if user has already requested this ride
-    const existingRequest = mockRequests.find(req => req.rideId === requestInputData.rideId && req.passengerUid === requestInputData.passengerUid);
-    if (existingRequest) {
-        return { message: "You have already requested this ride.", success: false };
+      return { message: "El viaje no fue encontrado.", success: false };
     }
 
+    // Esta verificación también está en RideCard, pero buena para incluirla del lado del servidor
+    if (ride.availableSeats <= 0) {
+      return { message: "No hay lugares disponibles para este viaje.", success: false };
+    }
+
+    // Verificar si el usuario ya solicitó este viaje
+    const existingRequest = mockRequests.find(req => req.rideId === requestInputData.rideId && req.passengerUid === requestInputData.passengerUid);
+    if (existingRequest) {
+      return { message: "Ya has solicitado este viaje.", success: false };
+    }
 
     const newRequest: RideRequest = {
       id: generateRequestId(),
+      driverName: ride.driverName,
       ...requestInputData,
       status: "pending",
       createdAt: new Date(),
     };
     mockRequests.push(newRequest);
-    console.log("Mock DB: Requesting ride", newRequest);
+    console.log("Mock DB: Solicitud de viaje", newRequest);
 
-    revalidatePath('/dashboard/passenger');
-    revalidatePath('/dashboard/driver'); // Driver needs to see new requests
-    // revalidatePath('/rides'); // Ride card might show updated info if we display # of requests
+    revalidatePath('/dashboard/pasajero');
+    revalidatePath('/dashboard/conductor'); // El conductor necesita ver las nuevas solicitudes
 
-    return { message: "Ride requested successfully!", success: true, requestId: newRequest.id };
+    return { message: "Solicitud de viaje realizada con éxito!", success: true, requestId: newRequest.id };
   } catch (error) {
-    console.error("Error requesting ride:", error);
-    return { message: "Failed to request ride.", success: false };
+    console.error("Error al solicitar el viaje:", error);
+    return { message: "No se pudo realizar la solicitud.", success: false };
   }
 }
 
@@ -128,25 +128,25 @@ export async function manageRideRequestAction(prevState: any, formData: FormData
 
     if (!validatedFields.success) {
       return {
-        message: "Invalid data for managing request.",
+        message: "Datos inválidos para gestionar la solicitud.",
         errors: validatedFields.error.flatten().fieldErrors,
         success: false,
       };
     }
     const { requestId, rideId, status: newStatus } = validatedFields.data;
-    
+
     const requestIndex = mockRequests.findIndex(req => req.id === requestId);
     if (requestIndex === -1) {
-      return { message: "Request not found.", success: false };
+      return { message: "Solicitud no encontrada.", success: false };
     }
 
     const requestToUpdate = mockRequests[requestIndex];
     const oldStatus = requestToUpdate.status;
-    
-    requestToUpdate.status = newStatus;
-    requestToUpdate.createdAt = new Date(); // Touch the timestamp
 
-    // Update available seats on the ride
+    requestToUpdate.status = newStatus;
+    requestToUpdate.createdAt = new Date(); // Actualizar timestamp
+
+    // Actualizar lugares disponibles en el viaje
     const rideIndex = mockRides.findIndex(r => r.id === rideId);
     if (rideIndex !== -1) {
       const rideToUpdate = mockRides[rideIndex];
@@ -154,26 +154,26 @@ export async function manageRideRequestAction(prevState: any, formData: FormData
         if (rideToUpdate.availableSeats > 0) {
           rideToUpdate.availableSeats--;
         } else {
-          // Edge case: seats became 0 due to another parallel acceptance.
-          // For mock, we can revert request or just log. Let's make it strict.
-          requestToUpdate.status = oldStatus; // Revert
-          return { message: "No seats available to accept this request.", success: false, updatedRequest: { ...requestToUpdate } }
+          // Caso extremo: no hay más lugares por otra aceptación paralela.
+          // Para el mock, revertimos la solicitud o simplemente lo registramos.
+          requestToUpdate.status = oldStatus; // Revertir
+          return { message: "No hay lugares disponibles para aceptar esta solicitud.", success: false, updatedRequest: { ...requestToUpdate } };
         }
       } else if (oldStatus === 'accepted' && newStatus === 'rejected') {
         rideToUpdate.availableSeats++;
       }
-      // Other transitions (e.g. pending -> rejected) don't change seat count.
+      // Otras transiciones (ej. pending -> rejected) no modifican la cantidad de lugares.
     }
-    
-    console.log(`Mock DB: Updating request ${requestId} to ${newStatus}`);
 
-    revalidatePath('/dashboard/driver');
-    revalidatePath('/dashboard/passenger');
-    revalidatePath('/rides'); // Seat counts might change
+    console.log(`Mock DB: Actualizando solicitud ${requestId} a ${newStatus}`);
 
-    return { message: `Request ${newStatus} successfully.`, success: true, updatedRequest: { ...requestToUpdate } };
+    revalidatePath('/dashboard/conductor');
+    revalidatePath('/dashboard/pasajero');
+    revalidatePath('/viajes'); // Los contadores de lugares pueden haber cambiado
+
+    return { message: `Solicitud ${newStatus === 'accepted' ? 'aceptada' : 'rechazada'} con éxito.`, success: true, updatedRequest: { ...requestToUpdate } };
   } catch (error) {
-    console.error("Error managing ride request:", error);
-    return { message: "Failed to manage ride request.", success: false };
+    console.error("Error al gestionar la solicitud de viaje:", error);
+    return { message: "No se pudo gestionar la solicitud.", success: false };
   }
 }

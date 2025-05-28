@@ -8,9 +8,9 @@ export default function SearchRidesPage() {
       <div className="max-w-3xl mx-auto">
         <Card className="shadow-xl">
           <CardHeader>
-            <CardTitle className="text-3xl">Find Your Next Ride</CardTitle>
+            <CardTitle className="text-3xl">Encontrá tu próximo viaje</CardTitle>
             <CardDescription>
-              Enter your travel details to search for available carpools.
+              Ingresá los detalles de tu viaje para buscar viajes compartidos disponibles.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -18,7 +18,7 @@ export default function SearchRidesPage() {
           </CardContent>
         </Card>
       </div>
-      {/* Ride listings will be shown on /rides page after search */}
+      {/* Las opciones de viaje se mostrarán en /viajes después de realizar la búsqueda */}
     </AppLayout>
   );
 }

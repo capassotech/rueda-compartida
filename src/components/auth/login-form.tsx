@@ -22,8 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
+  email: z.string().email({ message: "Correo electrónico inválido." }),
+  password: z.string().min(1, { message: "La contraseña es requerida." }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -31,7 +31,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
-  
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -40,24 +40,28 @@ export function LoginForm() {
     },
   });
 
-  const {formState: {isSubmitting}} = form;
+  const { formState: { isSubmitting } } = form;
 
   async function onSubmit(values: LoginFormValues) {
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: "Inicio de Sesión Exitoso",
+        description: "¡Bienvenido de vuelta!",
       });
-      router.push("/"); // Redirect to home or dashboard
+      router.push("/"); // Redirige a inicio o dashboard
     } catch (error: any) {
-      console.error("Login error", error);
-      let errorMessage = "Login failed. Please check your credentials.";
-       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        errorMessage = "Invalid email or password.";
+      console.error("Error en el inicio de sesión", error);
+      let errorMessage = "No se pudo iniciar sesión. Verificá tus credenciales.";
+      if (
+        error.code === 'auth/user-not-found' ||
+        error.code === 'auth/wrong-password' ||
+        error.code === 'auth/invalid-credential'
+      ) {
+        errorMessage = "Correo o contraseña incorrectos.";
       }
       toast({
-        title: "Login Failed",
+        title: "Inicio de Sesión Fallido",
         description: errorMessage,
         variant: "destructive",
       });
@@ -72,9 +76,9 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="your@email.com" {...field} />
+                <Input type="email" placeholder="tu@correo.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -85,7 +89,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Contraseña</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
@@ -95,12 +99,12 @@ export function LoginForm() {
         />
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Login
+          Iniciar Sesión
         </Button>
         <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          ¿No tenés cuenta?{" "}
           <Button variant="link" asChild className="p-0 h-auto">
-            <Link href="/register">Register</Link>
+            <Link href="/register">Registrate</Link>
           </Button>
         </p>
       </form>

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { CalendarDays, Clock, MapPin, Users, CircleDollarSign, CheckCircle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-provider";
-import { requestRideAction } from "@/lib/actions/rides"; // Placeholder
+import { requestRideAction } from "@/lib/actions/rides"; // Acción simulada
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -21,11 +21,19 @@ export function RideCard({ ride }: RideCardProps) {
 
   const handleRequestRide = async () => {
     if (!user) {
-      toast({ title: "Login Required", description: "Please log in to request a ride.", variant: "destructive" });
+      toast({ 
+        title: "Inicia Sesión", 
+        description: "Debés iniciar sesión para solicitar un viaje.", 
+        variant: "destructive" 
+      });
       return;
     }
     if (user.uid === ride.driverUid) {
-      toast({ title: "Action Not Allowed", description: "You cannot request your own ride.", variant: "destructive" });
+      toast({ 
+        title: "Acción No Permitida", 
+        description: "No puedes solicitar tu propio viaje.", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -33,29 +41,28 @@ export function RideCard({ ride }: RideCardProps) {
     const formData = new FormData();
     formData.append("rideId", ride.id || "");
     formData.append("passengerUid", user.uid);
-    formData.append("passengerName", user.displayName || user.email || "Anonymous Passenger");
+    formData.append("passengerName", user.displayName || user.email || "Pasajero Anónimo");
     formData.append("driverUid", ride.driverUid);
-    // Add denormalized ride data for the request document
+    // Datos desnormalizados del viaje para la solicitud
     formData.append("origin", ride.origin);
     formData.append("destination", ride.destination);
     formData.append("date", ride.date);
     formData.append("time", ride.time);
     formData.append("price", String(ride.price));
 
-
-    // Placeholder: This action would interact with Firestore
+    // Placeholder: En una app real, esta acción interactuaría con Firestore
     const result = await requestRideAction(null, formData);
 
     if (result.success) {
       toast({ 
-        title: "Ride Requested!", 
-        description: "Your request has been sent to the driver.",
+        title: "Viaje Solicitado!", 
+        description: "Tu solicitud fue enviada al conductor.",
         action: <CheckCircle className="text-green-500" />
       });
     } else {
       toast({ 
-        title: "Request Failed", 
-        description: result.message || "Could not request ride.", 
+        title: "Solicitud Fallida", 
+        description: result.message || "No se pudo enviar la solicitud.", 
         variant: "destructive",
         action: <AlertTriangle className="text-red-500" />
       });
@@ -66,8 +73,8 @@ export function RideCard({ ride }: RideCardProps) {
   return (
     <Card className="w-full shadow-lg hover:shadow-primary/20 transition-shadow">
       <CardHeader>
-        <CardTitle className="text-xl md:text-2xl">{ride.origin} to {ride.destination}</CardTitle>
-        <CardDescription>Driver: {ride.driverName}</CardDescription>
+        <CardTitle className="text-xl md:text-2xl">{ride.origin} a {ride.destination}</CardTitle>
+        <CardDescription>Conductor: {ride.driverName}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center text-sm text-muted-foreground">
@@ -80,15 +87,15 @@ export function RideCard({ ride }: RideCardProps) {
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <MapPin className="mr-2 h-4 w-4 text-primary" />
-          <span>From: {ride.origin}</span>
+          <span>Desde: {ride.origin}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <MapPin className="mr-2 h-4 w-4 text-primary" />
-          <span>To: {ride.destination}</span>
+          <span>Hacia: {ride.destination}</span>
         </div>
         <div className="flex items-center text-sm">
           <Users className="mr-2 h-4 w-4 text-primary" />
-          <span className="font-medium">{ride.availableSeats} seats available</span>
+          <span className="font-medium">{ride.availableSeats} lugares disponibles</span>
         </div>
         <div className="flex items-center text-lg font-semibold">
           <CircleDollarSign className="mr-2 h-5 w-5 text-primary" />
@@ -99,10 +106,10 @@ export function RideCard({ ride }: RideCardProps) {
         {user?.uid !== ride.driverUid ? (
           <Button className="w-full" onClick={handleRequestRide} disabled={isRequesting || ride.availableSeats === 0}>
             {isRequesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {ride.availableSeats > 0 ? 'Request Ride' : 'No Seats Available'}
+            {ride.availableSeats > 0 ? 'Solicitar Viaje' : 'No Hay Lugares Disponibles'}
           </Button>
         ) : (
-          <Button className="w-full" disabled variant="outline">This is your ride</Button>
+          <Button className="w-full" disabled variant="outline">Este es tu viaje</Button>
         )}
       </CardFooter>
     </Card>

@@ -13,7 +13,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border">
-        © {new Date().getFullYear()} Rueda Compartida. All rights reserved.
+        © {new Date().getFullYear()} Rueda Compartida. Todos los derechos reservados.
       </footer>
     </div>
   );

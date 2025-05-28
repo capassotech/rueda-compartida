@@ -13,7 +13,7 @@ export default function CreateRidePage() {
     return (
       <AppLayout>
         <div className="flex justify-center items-center min-h-[60vh]">
-          {loading ? <Loader2 className="h-12 w-12 animate-spin text-primary" /> : <p>Please log in to create a ride.</p>}
+          {loading ? <Loader2 className="h-12 w-12 animate-spin text-primary" /> : <p>Iniciá sesión para ofrecer un viaje.</p>}
         </div>
       </AppLayout>
     );
@@ -24,9 +24,9 @@ export default function CreateRidePage() {
       <div className="max-w-2xl mx-auto">
         <Card className="shadow-xl">
           <CardHeader>
-            <CardTitle className="text-3xl">Offer a New Ride</CardTitle>
+            <CardTitle className="text-3xl">Ofrecé un Nuevo Viaje</CardTitle>
             <CardDescription>
-              Fill in the details below to publish your ride and find passengers.
+              Completá los detalles a continuación para publicar tu viaje y encontrar pasajeros.
             </CardDescription>
           </CardHeader>
           <CardContent>

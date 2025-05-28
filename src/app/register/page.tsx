@@ -4,8 +4,8 @@ import { RegisterForm } from "@/components/auth/register-form";
 export default function RegisterPage() {
   return (
     <AuthFormWrapper
-      title="Create an Account"
-      description="Join Rueda Compartida today to start sharing rides."
+      title="Crear una Cuenta"
+      description="Unite a Rueda Compartida hoy y empezá a compartir viajes."
     >
       <RegisterForm />
     </AuthFormWrapper>

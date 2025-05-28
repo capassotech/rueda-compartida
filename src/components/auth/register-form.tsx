@@ -22,9 +22,9 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 
 const registerSchema = z.object({
-  displayName: z.string().min(3, { message: "Display name must be at least 3 characters." }),
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  displayName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
+  email: z.string().email({ message: "Correo electrónico inválido." }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -42,7 +42,7 @@ export function RegisterForm() {
     },
   });
 
-  const {formState: {isSubmitting}} = form;
+  const { formState: { isSubmitting } } = form;
 
   async function onSubmit(values: RegisterFormValues) {
     try {
@@ -50,18 +50,18 @@ export function RegisterForm() {
       await updateProfile(userCredential.user, { displayName: values.displayName });
       
       toast({
-        title: "Registration Successful",
-        description: "Your account has been created.",
+        title: "Registro Exitoso",
+        description: "Tu cuenta ha sido creada.",
       });
-      router.push("/"); // Redirect to home or dashboard
+      router.push("/"); // Redirige a inicio o dashboard
     } catch (error: any) {
-      console.error("Registration error", error);
-      let errorMessage = "Registration failed. Please try again.";
+      console.error("Error en el registro", error);
+      let errorMessage = "No se pudo registrar. Intentalo nuevamente.";
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "This email is already registered.";
+        errorMessage = "Este correo ya está registrado.";
       }
       toast({
-        title: "Registration Failed",
+        title: "Registro Fallido",
         description: errorMessage,
         variant: "destructive",
       });
@@ -76,9 +76,9 @@ export function RegisterForm() {
           name="displayName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Display Name</FormLabel>
+              <FormLabel>Nombre de Usuario</FormLabel>
               <FormControl>
-                <Input placeholder="Your Name" {...field} />
+                <Input placeholder="Tu Nombre" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -89,9 +89,9 @@ export function RegisterForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="your@email.com" {...field} />
+                <Input type="email" placeholder="tu@correo.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -102,7 +102,7 @@ export function RegisterForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Contraseña</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
@@ -112,12 +112,12 @@ export function RegisterForm() {
         />
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Register
+          Registrate
         </Button>
         <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          ¿Ya tenés cuenta?{" "}
           <Button variant="link" asChild className="p-0 h-auto">
-            <Link href="/login">Login</Link>
+            <Link href="/login">Iniciar Sesión</Link>
           </Button>
         </p>
       </form>

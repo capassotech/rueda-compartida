@@ -12,7 +12,7 @@ import { useState } from "react";
 
 interface DriverRideCardProps {
   ride: Ride;
-  requests: RideRequest[]; // Requests specific to this ride
+  requests: RideRequest[]; // Solicitudes específicas para este viaje
 }
 
 export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCardProps) {
@@ -27,7 +27,7 @@ export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCa
     formData.append("status", newStatus);
     formData.append("rideId", ride.id || "");
 
-    // Placeholder: This action would update Firestore
+    // Placeholder: Esta acción actualizaría Firestore
     const result = await manageRideRequestAction(null, formData);
 
     if (result.success && result.updatedRequest) {
@@ -35,14 +35,14 @@ export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCa
         prevRequests.map(req => req.id === requestId ? result.updatedRequest as RideRequest : req)
       );
       toast({ 
-        title: `Request ${newStatus}`, 
-        description: `Successfully ${newStatus} the ride request.`,
+        title: `Solicitud ${newStatus === 'accepted' ? 'aceptada' : 'rechazada'}`, 
+        description: `Se ha ${newStatus === 'accepted' ? 'aceptado' : 'rechazado'} correctamente la solicitud.`,
         action: newStatus === 'accepted' ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />
       });
     } else {
       toast({ 
-        title: "Action Failed", 
-        description: result.message || `Could not ${newStatus} request.`, 
+        title: "Acción Fallida", 
+        description: result.message || `No se pudo ${newStatus === 'accepted' ? 'aceptar' : 'rechazar'} la solicitud.`, 
         variant: "destructive",
         action: <AlertTriangle className="text-red-500" />
       });
@@ -57,24 +57,24 @@ export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCa
     <Card className="w-full shadow-lg">
       <CardHeader>
         <CardTitle className="text-xl flex justify-between items-center">
-          <span>{ride.origin} to {ride.destination}</span>
+          <span>{ride.origin} a {ride.destination}</span>
           <Badge variant={ride.availableSeats > 0 ? "secondary" : "destructive"}>
-            {ride.availableSeats > 0 ? `${ride.availableSeats} seats left` : "Full"}
+            {ride.availableSeats > 0 ? `${ride.availableSeats} lugares disponibles` : "Completo"}
           </Badge>
         </CardTitle>
         <CardDescription>
-          On {new Date(ride.date).toLocaleDateString()} at {ride.time} | ${ride.price.toFixed(2)} per seat
+          El {new Date(ride.date).toLocaleDateString()} a las {ride.time} | ${ride.price.toFixed(2)} por lugar
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="requests">
             <AccordionTrigger>
-                View Ride Requests ({pendingRequests.length} pending, {acceptedRequests.length} accepted)
+              Ver Solicitudes ({pendingRequests.length} pendientes, {acceptedRequests.length} aceptadas)
             </AccordionTrigger>
             <AccordionContent>
               {requests.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">No requests for this ride yet.</p>
+                <p className="text-sm text-muted-foreground py-4">Aún no hay solicitudes para este viaje.</p>
               ) : (
                 <div className="space-y-4 pt-2">
                   {requests.map((request) => (
@@ -82,7 +82,7 @@ export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCa
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="font-semibold">{request.passengerName}</p>
-                          <p className="text-xs text-muted-foreground">Requested on: {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}</p>
+                          <p className="text-xs text-muted-foreground">Solicitado el: {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}</p>
                         </div>
                         <Badge variant={
                           request.status === 'accepted' ? 'default' : 
@@ -101,7 +101,7 @@ export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCa
                             disabled={processingRequestId === request.id}
                           >
                             {processingRequestId === request.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            <UserCheck className="mr-1 h-4 w-4" /> Accept
+                            <UserCheck className="mr-1 h-4 w-4" /> Aceptar
                           </Button>
                           <Button 
                             size="sm" 
@@ -111,7 +111,7 @@ export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCa
                             disabled={processingRequestId === request.id}
                           >
                              {processingRequestId === request.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            <UserX className="mr-1 h-4 w-4" /> Reject
+                            <UserX className="mr-1 h-4 w-4" /> Rechazar
                           </Button>
                         </div>
                       )}
@@ -124,7 +124,7 @@ export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCa
         </Accordion>
       </CardContent>
       <CardFooter>
-        <Button variant="outline" className="w-full">Edit Ride (Not Implemented)</Button>
+        <Button variant="outline" className="w-full">Editar Viaje (No Implementado)</Button>
       </CardFooter>
     </Card>
   );

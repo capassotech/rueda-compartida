@@ -1,5 +1,4 @@
-
-"use client"; 
+"use client";
 
 import { Suspense } from 'react';
 import { AppLayout } from "@/components/layout/app-layout";
@@ -11,20 +10,20 @@ import { SearchRidesForm } from "@/components/rides/search-rides-form";
 import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { mockRides } from "@/lib/mock-db"; // Import from mock-db
+import { mockRides } from "@/lib/mock-db"; // Import desde mock-db
 
 function RideListings() {
   const searchParams = useSearchParams();
   const origin = searchParams.get('origin');
   const destination = searchParams.get('destination');
-  const date = searchParams.get('date'); // Expected format YYYY-MM-DD
+  const date = searchParams.get('date'); // Formato esperado YYYY-MM-DD
 
-  // Filter rides from the mock database based on query params
+  // Filtrar viajes desde la base simulada según los parámetros de búsqueda
   const filteredRides = mockRides.filter(ride => {
     let matches = true;
     if (origin && !ride.origin.toLowerCase().includes(origin.toLowerCase())) matches = false;
     if (destination && !ride.destination.toLowerCase().includes(destination.toLowerCase())) matches = false;
-    if (date && ride.date !== date) matches = false; // Direct string comparison for YYYY-MM-DD
+    if (date && ride.date !== date) matches = false; // Comparación directa para formato YYYY-MM-DD
     return matches;
   }).sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
 
@@ -33,17 +32,17 @@ function RideListings() {
     return (
       <div className="text-center py-10">
         <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-xl font-semibold mb-2">Search for Rides</h3>
+        <h3 className="text-xl font-semibold mb-2">Buscar Viajes</h3>
         <p className="text-muted-foreground mb-4">
-          Please enter your origin, destination, and date to find available rides.
+          Por favor, ingresá tu origen, destino y fecha para encontrar viajes disponibles.
         </p>
         <Button asChild>
-          <Link href="/search-rides">Go to Search</Link>
+          <Link href="/buscar-viajes">Ir a la Búsqueda</Link>
         </Button>
       </div>
     );
   }
-  
+
   return (
     <>
       {filteredRides.length > 0 ? (
@@ -55,9 +54,9 @@ function RideListings() {
       ) : (
         <div className="text-center py-10">
           <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold">No Rides Found</h3>
+          <h3 className="text-xl font-semibold">No Se Encontraron Viajes</h3>
           <p className="text-muted-foreground">
-            Sorry, no rides match your search criteria. Try different locations or dates.
+            Lo sentimos, ningún viaje coincide con tus criterios. Intentá con otras ubicaciones o fechas.
           </p>
         </div>
       )}
@@ -65,26 +64,25 @@ function RideListings() {
   );
 }
 
-
 export default function RidesPage() {
   return (
     <AppLayout>
       <div className="space-y-8">
         <Card className="shadow-xl">
           <CardHeader>
-            <CardTitle className="text-3xl">Search Rides</CardTitle>
+            <CardTitle className="text-3xl">Buscar Viajes</CardTitle>
             <CardDescription>
-              Update your search criteria below.
+              Actualizá tus criterios de búsqueda a continuación.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SearchRidesForm /> 
+            <SearchRidesForm />
           </CardContent>
         </Card>
 
         <div>
-          <h2 className="text-2xl font-semibold mb-6">Available Rides</h2>
-          {/* Suspense is good practice for when data fetching might be async */}
+          <h2 className="text-2xl font-semibold mb-6">Viajes Disponibles</h2>
+          {/* Suspense es buena práctica cuando hay datos asincrónicos */}
           <Suspense fallback={<div className="flex justify-center items-center min-h-[30vh]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
             <RideListings />
           </Suspense>

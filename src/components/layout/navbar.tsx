@@ -26,7 +26,7 @@ export function Navbar() {
       await signOut(auth);
       router.push('/login');
     } catch (error) {
-      console.error("Error signing out: ", error);
+      console.error("Error al cerrar sesión: ", error);
     }
   };
 
@@ -45,15 +45,15 @@ export function Navbar() {
           </Link>
           <div className="flex items-center space-x-2 sm:space-x-4">
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <Link href="/search-rides">
+              <Link href="/buscar-viajes">
                 <Search className="mr-2 h-4 w-4" />
-                Search Rides
+                Buscar Viajes
               </Link>
             </Button>
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <Link href="/create-ride">
+              <Link href="/crear-viaje">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Create Ride
+                Ofrecer Viaje
               </Link>
             </Button>
             
@@ -62,7 +62,7 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || "User"} />
+                      <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || "Usuario"} />
                       <AvatarFallback>{getInitials(user.displayName || user.email)}</AvatarFallback>
                     </Avatar>
                   </Button>
@@ -71,7 +71,7 @@ export function Navbar() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {user.displayName || "User"}
+                        {user.displayName || "Usuario"}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user.email}
@@ -80,21 +80,21 @@ export function Navbar() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/driver">
+                    <Link href="/dashboard/conductor">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Driver Dashboard
+                      Panel del Conductor
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                     <Link href="/dashboard/passenger">
+                     <Link href="/dashboard/pasajero">
                        <User className="mr-2 h-4 w-4" />
-                       Passenger Dashboard
+                       Panel del Pasajero
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Log out
+                    Cerrar Sesión
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -103,13 +103,13 @@ export function Navbar() {
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">
                     <LogIn className="mr-1 h-4 w-4 sm:mr-2" /> 
-                    <span className="hidden sm:inline">Login</span>
+                    <span className="hidden sm:inline">Iniciar Sesión</span>
                   </Link>
                 </Button>
                 <Button size="sm" asChild>
                   <Link href="/register">
                     <UserPlus className="mr-1 h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Register</span>
+                    <span className="hidden sm:inline">Registrate</span>
                   </Link>
                 </Button>
               </>
@@ -122,10 +122,10 @@ export function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href="/search-rides">Search Rides</Link>
+                    <Link href="/buscar-viajes">Buscar Viajes</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/create-ride">Create Ride</Link>
+                    <Link href="/crear-viaje">Ofrecer Viaje</Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

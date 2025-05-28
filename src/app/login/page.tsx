@@ -4,8 +4,8 @@ import { LoginForm } from "@/components/auth/login-form";
 export default function LoginPage() {
   return (
     <AuthFormWrapper
-      title="Welcome Back!"
-      description="Log in to your Rueda Compartida account."
+      title="¡Bienvenido de Vuelta!"
+      description="Iniciá sesión en tu cuenta de Rueda Compartida."
     >
       <LoginForm />
     </AuthFormWrapper>

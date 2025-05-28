@@ -26,9 +26,9 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 const searchRidesSchema = z.object({
-  origin: z.string().min(1, "Origin is required."),
-  destination: z.string().min(1, "Destination is required."),
-  date: z.date({ required_error: "Date is required." }),
+  origin: z.string().min(1, "El origen es requerido."),
+  destination: z.string().min(1, "El destino es requerido."),
+  date: z.date({ required_error: "La fecha es requerida." }),
 });
 
 type SearchRidesFormValues = z.infer<typeof searchRidesSchema>;
@@ -45,8 +45,7 @@ export function SearchRidesForm() {
       date: searchParams.get('date') ? new Date(searchParams.get('date')!) : new Date(),
     },
   });
-  const {formState: {isSubmitting}} = form;
-
+  const { formState: { isSubmitting } } = form;
 
   function onSubmit(values: SearchRidesFormValues) {
     const params = new URLSearchParams();
@@ -54,7 +53,7 @@ export function SearchRidesForm() {
     params.set("destination", values.destination);
     params.set("date", format(values.date, "yyyy-MM-dd"));
     
-    router.push(`/rides?${params.toString()}`);
+    router.push(`/viajes?${params.toString()}`);
   }
 
   return (
@@ -66,9 +65,9 @@ export function SearchRidesForm() {
             name="origin"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Origin</FormLabel>
+                <FormLabel>Origen</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., City A" {...field} />
+                  <Input placeholder="ej. Ciudad A" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -79,9 +78,9 @@ export function SearchRidesForm() {
             name="destination"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Destination</FormLabel>
+                <FormLabel>Destino</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., City B" {...field} />
+                  <Input placeholder="ej. Ciudad B" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -92,7 +91,7 @@ export function SearchRidesForm() {
             name="date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Date</FormLabel>
+                <FormLabel>Fecha</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -106,7 +105,7 @@ export function SearchRidesForm() {
                         {field.value ? (
                           format(field.value, "PPP")
                         ) : (
-                          <span>Pick a date</span>
+                          <span>Seleccioná una fecha</span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
@@ -117,7 +116,7 @@ export function SearchRidesForm() {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                       disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1)) } 
+                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
                       initialFocus
                     />
                   </PopoverContent>
@@ -128,7 +127,7 @@ export function SearchRidesForm() {
           />
         </div>
         <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Search Rides"}
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Buscar Viajes"}
         </Button>
       </form>
     </Form>

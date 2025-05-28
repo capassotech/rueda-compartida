@@ -23,17 +23,17 @@ import {
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { createRideAction } from "@/lib/actions/rides"; // Placeholder action
+import { createRideAction } from "@/lib/actions/rides"; // Acción simulada
 import { useAuth } from "@/contexts/auth-provider";
 import { useRouter } from "next/navigation";
 
 const createRideSchema = z.object({
-  origin: z.string().min(3, "Origin must be at least 3 characters."),
-  destination: z.string().min(3, "Destination must be at least 3 characters."),
-  date: z.date({ required_error: "Date is required." }),
-  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format (HH:MM)."),
-  availableSeats: z.coerce.number().int().min(1, "At least 1 seat must be available.").max(10, "Maximum 10 seats."),
-  price: z.coerce.number().min(0, "Price cannot be negative."),
+  origin: z.string().min(3, "El origen debe tener al menos 3 caracteres."),
+  destination: z.string().min(3, "El destino debe tener al menos 3 caracteres."),
+  date: z.date({ required_error: "La fecha es requerida." }),
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato de hora inválido (HH:MM)."),
+  availableSeats: z.coerce.number().int().min(1, "Debe haber al menos 1 lugar disponible.").max(10, "Máximo 10 lugares."),
+  price: z.coerce.number().min(0, "El precio no puede ser negativo."),
 });
 
 type CreateRideFormValues = z.infer<typeof createRideSchema>;
@@ -54,41 +54,44 @@ export function CreateRideForm() {
     },
   });
 
-  const {formState: {isSubmitting}} = form;
+  const { formState: { isSubmitting } } = form;
 
   async function onSubmit(values: CreateRideFormValues) {
     if (!user) {
-      toast({ title: "Error", description: "You must be logged in to create a ride.", variant: "destructive" });
+      toast({ 
+        title: "Error", 
+        description: "Debés iniciar sesión para ofrecer un viaje.", 
+        variant: "destructive" 
+      });
       return;
     }
 
     const rideData = {
       ...values,
-      date: format(values.date, "yyyy-MM-dd"), // Format date to string for action
+      date: format(values.date, "yyyy-MM-dd"), // Formato de fecha para la acción
       driverUid: user.uid,
-      driverName: user.displayName || user.email || "Anonymous Driver",
+      driverName: user.displayName || user.email || "Conductor Anónimo",
     };
     
-    // Convert rideData to FormData for server action
     const formData = new FormData();
     Object.entries(rideData).forEach(([key, value]) => {
       formData.append(key, String(value));
     });
 
-    // Placeholder: In a real app, this action would interact with Firestore
+    // Placeholder: En una app real, esta acción interactuaría con Firestore
     const result = await createRideAction(null, formData); 
 
     if (result.success) {
       toast({
-        title: "Ride Created!",
-        description: "Your ride has been successfully posted.",
+        title: "Viaje Creado!",
+        description: "Tu viaje ha sido publicado correctamente.",
       });
       form.reset();
-      router.push('/dashboard/driver'); // Or to the ride details page
+      router.push('/dashboard/conductor'); // O a la página del detalle del viaje
     } else {
       toast({
-        title: "Failed to Create Ride",
-        description: result.message || "An unexpected error occurred.",
+        title: "No se Pudo Crear el Viaje",
+        description: result.message || "Ocurrió un error inesperado.",
         variant: "destructive",
       });
     }
@@ -103,9 +106,9 @@ export function CreateRideForm() {
             name="origin"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Origin</FormLabel>
+                <FormLabel>Origen</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., New York City" {...field} />
+                  <Input placeholder="ej. Ciudad de Buenos Aires" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -116,9 +119,9 @@ export function CreateRideForm() {
             name="destination"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Destination</FormLabel>
+                <FormLabel>Destino</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., Boston" {...field} />
+                  <Input placeholder="ej. Córdoba" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -132,7 +135,7 @@ export function CreateRideForm() {
             name="date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Date</FormLabel>
+                <FormLabel>Fecha</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -146,7 +149,7 @@ export function CreateRideForm() {
                         {field.value ? (
                           format(field.value, "PPP")
                         ) : (
-                          <span>Pick a date</span>
+                          <span>Seleccioná una fecha</span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
@@ -157,7 +160,7 @@ export function CreateRideForm() {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1)) } // Disable past dates
+                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))} // Fechas pasadas deshabilitadas
                       initialFocus
                     />
                   </PopoverContent>
@@ -171,7 +174,7 @@ export function CreateRideForm() {
             name="time"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Time (HH:MM)</FormLabel>
+                <FormLabel>Hora (HH:MM)</FormLabel>
                 <FormControl>
                   <Input type="time" {...field} />
                 </FormControl>
@@ -187,7 +190,7 @@ export function CreateRideForm() {
             name="availableSeats"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Available Seats</FormLabel>
+                <FormLabel>Lugares Disponibles</FormLabel>
                 <FormControl>
                   <Input type="number" min="1" max="10" {...field} />
                 </FormControl>
@@ -200,7 +203,7 @@ export function CreateRideForm() {
             name="price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price per Seat ($)</FormLabel>
+                <FormLabel>Precio por Lugar ($)</FormLabel>
                 <FormControl>
                   <Input type="number" min="0" step="0.01" {...field} />
                 </FormControl>
@@ -212,7 +215,7 @@ export function CreateRideForm() {
         
         <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
           {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Create Ride
+          Ofrecer Viaje
         </Button>
       </form>
     </Form>
