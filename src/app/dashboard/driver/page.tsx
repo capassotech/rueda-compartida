@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppLayout } from "@/components/layout/app-layout";
@@ -7,19 +8,7 @@ import { useAuthGuard } from "@/hooks/use-auth-guard";
 import { Loader2, PlusCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-
-// Mock data - replace with actual data fetching for the logged-in driver
-const MOCK_DRIVER_RIDES: Ride[] = [
-  { id: "1", driverUid: "currentUserUID", driverName: "Current User", origin: "New York", destination: "Boston", date: "2024-08-15", time: "09:00", availableSeats: 1, price: 25.00, createdAt: new Date() },
-  { id: "5", driverUid: "currentUserUID", driverName: "Current User", origin: "Chicago", destination: "Detroit", date: "2024-08-20", time: "11:00", availableSeats: 3, price: 40.00, createdAt: new Date() },
-];
-
-const MOCK_RIDE_REQUESTS: RideRequest[] = [
-  { id: "req1", rideId: "1", passengerUid: "pass1", passengerName: "Passenger One", driverUid: "currentUserUID", status: "pending", createdAt: new Date() },
-  { id: "req2", rideId: "1", passengerUid: "pass2", passengerName: "Passenger Two", driverUid: "currentUserUID", status: "accepted", createdAt: new Date() },
-  { id: "req3", rideId: "5", passengerUid: "pass3", passengerName: "Passenger Three", driverUid: "currentUserUID", status: "pending", createdAt: new Date() },
-];
-
+import { mockRides, mockRequests } from "@/lib/mock-db"; // Import from mock-db
 
 export default function DriverDashboardPage() {
   const { user, loading } = useAuthGuard();
@@ -34,12 +23,15 @@ export default function DriverDashboardPage() {
     );
   }
 
-  // In a real app, filter rides and requests for the current user (user.uid)
-  const driverRides = MOCK_DRIVER_RIDES.map(ride => ({
-    ...ride,
-    driverUid: user.uid, // Assuming these are the current user's rides for mock
-    driverName: user.displayName || user.email || "Me"
-  }));
+  // Filter rides and requests for the current user (user.uid) from the mock database
+  const driverRides = mockRides
+    .filter(ride => ride.driverUid === user.uid)
+    .map(ride => ({
+      ...ride,
+      // driverName can be enriched here if needed, but mock-db might already have it from creation
+      driverName: ride.driverName || user.displayName || user.email || "Me" 
+    }))
+    .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
 
   return (
     <AppLayout>
@@ -59,8 +51,11 @@ export default function DriverDashboardPage() {
           {driverRides.length > 0 ? (
             <div className="space-y-6">
               {driverRides.map((ride) => {
-                const rideRequests = MOCK_RIDE_REQUESTS.filter(req => req.rideId === ride.id && req.driverUid === user.uid);
-                return <DriverRideCard key={ride.id} ride={ride} requests={rideRequests} />;
+                // Filter requests specific to this ride and this driver
+                const rideSpecificRequests = mockRequests.filter(
+                  req => req.rideId === ride.id && req.driverUid === user.uid
+                ).sort((a,b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0) );
+                return <DriverRideCard key={ride.id} ride={ride} requests={rideSpecificRequests} />;
               })}
             </div>
           ) : (
