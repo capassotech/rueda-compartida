@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,25 +25,15 @@ import { cn } from "@/lib/utils";
 import { createRide } from "@/lib/firestore-rides";
 import { useAuth } from "@/contexts/auth-provider";
 import { useRouter } from "next/navigation";
-
-const createRideSchema = z.object({
-  origin: z.string().min(3, "El origen debe tener al menos 3 caracteres."),
-  destination: z.string().min(3, "El destino debe tener al menos 3 caracteres."),
-  date: z.date({ required_error: "La fecha es requerida." }),
-  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Formato de hora inválido (HH:MM)."),
-  availableSeats: z.coerce.number().int().min(1, "Debe haber al menos 1 lugar disponible.").max(10, "Máximo 10 lugares."),
-  price: z.coerce.number().min(0, "El precio no puede ser negativo."),
-});
-
-type CreateRideFormValues = z.infer<typeof createRideSchema>;
+import { rideFormSchema, type RideFormValues } from "@/lib/validators/ride";
 
 export function CreateRideForm() {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
 
-  const form = useForm<CreateRideFormValues>({
-    resolver: zodResolver(createRideSchema),
+  const form = useForm<RideFormValues>({
+    resolver: zodResolver(rideFormSchema),
     defaultValues: {
       origin: "",
       destination: "",
@@ -56,7 +45,7 @@ export function CreateRideForm() {
 
   const { formState: { isSubmitting } } = form;
 
-  async function onSubmit(values: CreateRideFormValues) {
+  async function onSubmit(values: RideFormValues) {
     if (!user) {
       toast({ 
         title: "Error", 
