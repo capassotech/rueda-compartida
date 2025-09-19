@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const MAX_NOTIFICATIONS = 30;
 const LAST_SEEN_STORAGE_KEY = "rc:last-seen";
+const LAST_SEEN_FALLBACK = 0;
 
 export type NotificationType = "new-request" | "counter-offer" | "rejection";
 export type NotificationSource = "driver" | "passenger";
@@ -40,6 +41,7 @@ interface NotificationContextValue {
   notifications: NotificationEntry[];
   unreadCount: number;
   markAllAsRead: () => void;
+  markAsRead: (notificationId: string) => void;
 }
 
 const NotificationContext =
@@ -82,13 +84,13 @@ function buildNotificationId(
 }
 
 function loadLastSeen(uid: string, role: NotificationSource) {
-  if (typeof window === "undefined") return Date.now();
+  if (typeof window === "undefined") return LAST_SEEN_FALLBACK;
   const stored = window.localStorage.getItem(
     `${LAST_SEEN_STORAGE_KEY}:${uid}:${role}`,
   );
-  if (!stored) return Date.now();
+  if (!stored) return LAST_SEEN_FALLBACK;
   const parsed = Number(stored);
-  return Number.isFinite(parsed) ? parsed : Date.now();
+  return Number.isFinite(parsed) ? parsed : LAST_SEEN_FALLBACK;
 }
 
 function persistLastSeen(uid: string, role: NotificationSource, value: number) {
@@ -138,16 +140,17 @@ function createDriverPendingNotification(request: RideRequest): NotificationEntr
       ? `para el viaje de ${request.origin} a ${request.destination}`
       : "para tu viaje";
   const price = formatCurrency(request.offeredPrice ?? request.price ?? null);
+  const type: NotificationType = isUpdatedOffer ? "counter-offer" : "new-request";
 
   return {
-    id: buildNotificationId(request, "new-request", timestamp),
-    type: "new-request",
+    id: buildNotificationId(request, type, timestamp),
+    type,
     source: "driver",
     title: isUpdatedOffer
-      ? "El pasajero actualizó su oferta"
+      ? "Nueva contraoferta del pasajero"
       : "Nueva solicitud de viaje",
     description: isUpdatedOffer
-      ? `${passengerName} propuso ${price} ${route}.`
+      ? `${passengerName} envió una contraoferta de ${price} ${route}.`
       : `${passengerName} solicitó un lugar ${route} por ${price}.`,
     createdAt: eventDate,
     read: false,
@@ -424,6 +427,46 @@ export function NotificationProvider({
     }
   }, [user?.uid]);
 
+  const markAsRead = useCallback(
+    (notificationId: string) => {
+      if (!user?.uid) return;
+      if (!notificationId) return;
+
+      const existing = notificationsRef.current;
+      if (!existing.length) return;
+
+      const target = existing.find((notification) => notification.id === notificationId);
+      if (!target) return;
+      if (target.read) return;
+
+      const updated = existing.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read: true }
+          : notification,
+      );
+
+      notificationsRef.current = updated;
+      setNotifications(updated);
+
+      const createdTimestamp = target.createdAt.getTime();
+
+      if (target.source === "driver") {
+        if (createdTimestamp > driverLastSeenRef.current) {
+          driverLastSeenRef.current = createdTimestamp;
+          persistLastSeen(user.uid, "driver", createdTimestamp);
+        }
+      }
+
+      if (target.source === "passenger") {
+        if (createdTimestamp > passengerLastSeenRef.current) {
+          passengerLastSeenRef.current = createdTimestamp;
+          persistLastSeen(user.uid, "passenger", createdTimestamp);
+        }
+      }
+    },
+    [user?.uid],
+  );
+
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read).length,
     [notifications],
@@ -434,8 +477,9 @@ export function NotificationProvider({
       notifications,
       unreadCount,
       markAllAsRead,
+      markAsRead,
     }),
-    [notifications, unreadCount, markAllAsRead],
+    [notifications, unreadCount, markAllAsRead, markAsRead],
   );
 
   return (

@@ -84,11 +84,15 @@ import { format, isValid, parseISO } from "date-fns";
 interface DriverRideCardProps {
   ride: Ride;
   requests: RideRequest[]; // Solicitudes específicas para este viaje
+  highlightedRequestId?: string | null;
+  isHighlighted?: boolean;
 }
 
 export function DriverRideCard({
   ride,
   requests: initialRequests,
+  highlightedRequestId = null,
+  isHighlighted = false,
 }: DriverRideCardProps) {
   const { toast } = useToast();
   const [requests, setRequests] = useState<RideRequest[]>(initialRequests);
@@ -104,6 +108,7 @@ export function DriverRideCard({
   );
   const [counterOfferValue, setCounterOfferValue] = useState<string>("");
   const [isSendingCounterOffer, setIsSendingCounterOffer] = useState(false);
+  const [accordionValue, setAccordionValue] = useState<string | undefined>();
 
   const form = useForm<RideFormValues>({
     resolver: zodResolver(rideFormSchema),
@@ -117,6 +122,12 @@ export function DriverRideCard({
   useEffect(() => {
     form.reset(mapRideToFormValues(ride));
   }, [ride, form]);
+
+  useEffect(() => {
+    if (!highlightedRequestId) return;
+    if (!requests.some((request) => request.id === highlightedRequestId)) return;
+    setAccordionValue("requests");
+  }, [highlightedRequestId, requests]);
 
   const activeRequests = useMemo(
     () =>
@@ -358,7 +369,13 @@ export function DriverRideCard({
   };
 
   return (
-    <Card className="w-full shadow-lg">
+    <Card
+      id={ride.id ? `ride-${ride.id}` : undefined}
+      className={cn(
+        "w-full shadow-lg transition-shadow",
+        isHighlighted && "border-primary/80 ring-2 ring-primary/40",
+      )}
+    >
       <CardHeader>
         <CardTitle className="text-xl flex justify-between items-center">
           <span>
@@ -376,7 +393,15 @@ export function DriverRideCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion
+          type="single"
+          collapsible
+          className="w-full"
+          value={accordionValue}
+          onValueChange={(value) =>
+            setAccordionValue(value === "" ? undefined : value)
+          }
+        >
           <AccordionItem value="requests">
             <AccordionTrigger>
               Ver Solicitudes ({activeRequests.length} en curso,{' '}
@@ -390,6 +415,8 @@ export function DriverRideCard({
               ) : (
                 <div className="space-y-4 pt-2">
                   {requests.map((request) => {
+                    const isHighlightedRequest =
+                      highlightedRequestId === request.id;
                     const passengerOffer =
                       typeof request.offeredPrice === "number"
                         ? request.offeredPrice
@@ -408,7 +435,12 @@ export function DriverRideCard({
                     return (
                       <div
                         key={request.id}
-                        className="p-3 border rounded-md bg-background/50"
+                        data-request-id={request.id}
+                        className={cn(
+                          "p-3 border rounded-md bg-background/50 transition-shadow",
+                          isHighlightedRequest &&
+                            "border-primary/80 ring-2 ring-primary/40 bg-primary/5",
+                        )}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
