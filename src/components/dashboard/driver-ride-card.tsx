@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CalendarDays, Clock, Users, CircleDollarSign, UserCheck, UserX, CheckCircle, XCircle, Loader2, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { manageRideRequestAction } from "@/lib/actions/rides"; // Placeholder
+import { updateRideRequestStatus } from "@/lib/firestore-rides";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface DriverRideCardProps {
   ride: Ride;
@@ -20,15 +20,17 @@ export function DriverRideCard({ ride, requests: initialRequests }: DriverRideCa
   const [requests, setRequests] = useState<RideRequest[]>(initialRequests);
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
+  useEffect(() => {
+    setRequests(initialRequests);
+  }, [initialRequests]);
+
   const handleManageRequest = async (requestId: string, newStatus: 'accepted' | 'rejected') => {
     setProcessingRequestId(requestId);
-    const formData = new FormData();
-    formData.append("requestId", requestId);
-    formData.append("status", newStatus);
-    formData.append("rideId", ride.id || "");
-
-    // Placeholder: Esta acción actualizaría Firestore
-    const result = await manageRideRequestAction(null, formData);
+    const result = await updateRideRequestStatus(
+      requestId,
+      ride.id || "",
+      newStatus,
+    );
 
     if (result.success && result.updatedRequest) {
       setRequests(prevRequests => 

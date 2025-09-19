@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { DriverRideCard } from "@/components/dashboard/driver-ride-card";
 import type { Ride, RideRequest } from "@/types";
@@ -7,10 +8,69 @@ import { useAuthGuard } from "@/hooks/use-auth-guard";
 import { Loader2, PlusCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { mockRides, mockRequests } from "@/lib/mock-db"; // Import desde mock-db
+import {
+  subscribeToDriverRides,
+  subscribeToDriverRequests,
+} from "@/lib/firestore-rides";
 
 export default function DriverDashboardPage() {
   const { user, loading } = useAuthGuard();
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [rideRequests, setRideRequests] = useState<RideRequest[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setRides([]);
+      setRideRequests([]);
+      setIsFetching(false);
+      return undefined;
+    }
+
+    setIsFetching(true);
+    const unsubscribeRides = subscribeToDriverRides(user.uid, (incomingRides) => {
+      setRides(
+        incomingRides.map((ride) => ({
+          ...ride,
+          driverName:
+            ride.driverName || user.displayName || user.email || "Yo",
+        })),
+      );
+      setIsFetching(false);
+    });
+
+    const unsubscribeRequests = subscribeToDriverRequests(
+      user.uid,
+      (incomingRequests) => {
+        setRideRequests(incomingRequests);
+      },
+    );
+
+    return () => {
+      unsubscribeRides();
+      unsubscribeRequests();
+    };
+  }, [user?.uid, user?.displayName, user?.email]);
+
+  const ridesWithRequests = useMemo(() => {
+    const requestsByRide = rideRequests.reduce<Record<string, RideRequest[]>>(
+      (acc, request) => {
+        const rideId = request.rideId;
+        if (!rideId) return acc;
+        if (!acc[rideId]) {
+          acc[rideId] = [];
+        }
+        acc[rideId].push(request);
+        return acc;
+      },
+      {},
+    );
+
+    return rides.map((ride) => ({
+      ride,
+      requests: (ride.id && requestsByRide[ride.id]) || [],
+    }));
+  }, [rides, rideRequests]);
 
   if (loading || !user) {
     return (
@@ -25,16 +85,6 @@ export default function DriverDashboardPage() {
       </AppLayout>
     );
   }
-
-  // Filtrar viajes y solicitudes del usuario actual (user.uid) desde la base simulada
-  const driverRides = mockRides
-    .filter(ride => ride.driverUid === user.uid)
-    .map(ride => ({
-      ...ride,
-      // driverName puede ser enriquecido aquí si es necesario, pero el mock-db ya podría tenerlo
-      driverName: ride.driverName || user.displayName || user.email || "Yo"
-    }))
-    .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
 
   return (
     <AppLayout>
@@ -51,16 +101,19 @@ export default function DriverDashboardPage() {
 
         <div>
           <h2 className="text-2xl font-semibold mb-4">Viajes Publicados</h2>
-          {driverRides.length > 0 ? (
+          {isFetching ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : ridesWithRequests.length > 0 ? (
             <div className="space-y-6">
-              {driverRides.map((ride) => {
-                // Filtrar las solicitudes específicas de este viaje y conductor
-                const rideSpecificRequests = mockRequests.filter(
-                  req => req.rideId === ride.id && req.driverUid === user.uid
-                ).sort((a,b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-                
-                return <DriverRideCard key={ride.id} ride={ride} requests={rideSpecificRequests} />;
-              })}
+              {ridesWithRequests.map(({ ride, requests }) => (
+                <DriverRideCard
+                  key={ride.id}
+                  ride={ride}
+                  requests={requests}
+                />
+              ))}
             </div>
           ) : (
             <div className="text-center py-10 border-2 border-dashed border-border rounded-lg">

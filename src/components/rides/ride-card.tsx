@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { CalendarDays, Clock, MapPin, Users, CircleDollarSign, CheckCircle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-provider";
-import { requestRideAction } from "@/lib/actions/rides"; // Acción simulada
+import { requestRide } from "@/lib/firestore-rides";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -38,20 +38,18 @@ export function RideCard({ ride }: RideCardProps) {
     }
 
     setIsRequesting(true);
-    const formData = new FormData();
-    formData.append("rideId", ride.id || "");
-    formData.append("passengerUid", user.uid);
-    formData.append("passengerName", user.displayName || user.email || "Pasajero Anónimo");
-    formData.append("driverUid", ride.driverUid);
-    // Datos desnormalizados del viaje para la solicitud
-    formData.append("origin", ride.origin);
-    formData.append("destination", ride.destination);
-    formData.append("date", ride.date);
-    formData.append("time", ride.time);
-    formData.append("price", String(ride.price));
-
-    // Placeholder: En una app real, esta acción interactuaría con Firestore
-    const result = await requestRideAction(null, formData);
+    const result = await requestRide({
+      rideId: ride.id || "",
+      passengerUid: user.uid,
+      passengerName: user.displayName || user.email || "Pasajero Anónimo",
+      driverUid: ride.driverUid,
+      driverName: ride.driverName,
+      origin: ride.origin,
+      destination: ride.destination,
+      date: ride.date,
+      time: ride.time,
+      price: ride.price,
+    });
 
     if (result.success) {
       toast({ 
