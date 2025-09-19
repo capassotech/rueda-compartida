@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { AppLayout } from "@/components/layout/app-layout";
 import { RideCard } from "@/components/rides/ride-card";
 import type { Ride } from "@/types";
@@ -10,7 +10,7 @@ import { SearchRidesForm } from "@/components/rides/search-rides-form";
 import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { mockRides } from "@/lib/mock-db"; // Import desde mock-db
+import { subscribeToAllRides } from "@/lib/firestore-rides";
 
 function RideListings() {
   const searchParams = useSearchParams();
@@ -18,14 +18,38 @@ function RideListings() {
   const destination = searchParams.get('destination');
   const date = searchParams.get('date'); // Formato esperado YYYY-MM-DD
 
-  // Filtrar viajes desde la base simulada según los parámetros de búsqueda
-  const filteredRides = mockRides.filter(ride => {
-    let matches = true;
-    if (origin && !ride.origin.toLowerCase().includes(origin.toLowerCase())) matches = false;
-    if (destination && !ride.destination.toLowerCase().includes(destination.toLowerCase())) matches = false;
-    if (date && ride.date !== date) matches = false; // Comparación directa para formato YYYY-MM-DD
-    return matches;
-  }).sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAllRides((incomingRides) => {
+      setRides(incomingRides);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const filteredRides = useMemo(() => {
+    return rides
+      .filter((ride) => {
+        let matches = true;
+        if (origin && !ride.origin.toLowerCase().includes(origin.toLowerCase())) {
+          matches = false;
+        }
+        if (destination && !ride.destination.toLowerCase().includes(destination.toLowerCase())) {
+          matches = false;
+        }
+        if (date && ride.date !== date) {
+          matches = false;
+        }
+        return matches;
+      })
+      .filter((ride) => ride.availableSeats > 0)
+      .sort(
+        (a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0),
+      );
+  }, [rides, origin, destination, date]);
 
 
   if (!origin && !destination && !date) {
@@ -43,24 +67,28 @@ function RideListings() {
     );
   }
 
-  return (
-    <>
-      {filteredRides.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRides.map((ride) => (
-            <RideCard key={ride.id} ride={ride} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-10">
-          <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold">No Se Encontraron Viajes</h3>
-          <p className="text-muted-foreground">
-            Lo sentimos, ningún viaje coincide con tus criterios. Intentá con otras ubicaciones o fechas.
-          </p>
-        </div>
-      )}
-    </>
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return filteredRides.length > 0 ? (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {filteredRides.map((ride) => (
+        <RideCard key={ride.id} ride={ride} />
+      ))}
+    </div>
+  ) : (
+    <div className="text-center py-10">
+      <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+      <h3 className="text-xl font-semibold">No Se Encontraron Viajes</h3>
+      <p className="text-muted-foreground">
+        Lo sentimos, ningún viaje coincide con tus criterios. Intentá con otras ubicaciones o fechas.
+      </p>
+    </div>
   );
 }
 

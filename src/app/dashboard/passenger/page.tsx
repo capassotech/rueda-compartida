@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { PassengerRequestCard } from "@/components/dashboard/passenger-request-card";
 import type { RideRequest } from "@/types";
@@ -7,10 +8,42 @@ import { useAuthGuard } from "@/hooks/use-auth-guard";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { mockRequests } from "@/lib/mock-db"; // Import desde mock-db
+import { subscribeToPassengerRequests } from "@/lib/firestore-rides";
 
 export default function PassengerDashboardPage() {
   const { user, loading } = useAuthGuard();
+  const [requests, setRequests] = useState<RideRequest[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setRequests([]);
+      setIsFetching(false);
+      return undefined;
+    }
+
+    setIsFetching(true);
+    const unsubscribe = subscribeToPassengerRequests(
+      user.uid,
+      (incomingRequests) => {
+        setRequests(
+          incomingRequests.map((request) => ({
+            ...request,
+            passengerName:
+              request.passengerName ||
+              user.displayName ||
+              user.email ||
+              "Yo",
+          })),
+        );
+        setIsFetching(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, [user?.uid, user?.displayName, user?.email]);
+
+  const passengerRequests = requests;
 
   if (loading || !user) {
     return (
@@ -26,16 +59,6 @@ export default function PassengerDashboardPage() {
     );
   }
 
-  // Filtrar las solicitudes del pasajero actual (user.uid) desde la base simulada
-  const passengerRequests = mockRequests
-    .filter(req => req.passengerUid === user.uid)
-    .map(req => ({
-      ...req,
-      // passengerName puede ser enriquecido aquí si es necesario
-      passengerName: req.passengerName || user.displayName || user.email || "Yo"
-    }))
-    .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-
   return (
     <AppLayout>
       <div className="space-y-8">
@@ -43,7 +66,11 @@ export default function PassengerDashboardPage() {
 
         <div>
           <h2 className="text-2xl font-semibold mb-4">Tus Solicitudes de Viaje</h2>
-          {passengerRequests.length > 0 ? (
+          {isFetching ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : passengerRequests.length > 0 ? (
             <div className="space-y-6">
               {passengerRequests.map((request) => (
                 <PassengerRequestCard key={request.id} request={request} />

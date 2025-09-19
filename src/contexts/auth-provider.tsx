@@ -6,6 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import type { AppUser } from '@/types';
 import { Loader2 } from 'lucide-react';
+import { persistUserProfile } from '@/lib/firestore-users';
 
 interface AuthContextType {
   user: AppUser;
@@ -19,8 +20,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
+      if (firebaseUser) {
+        await persistUserProfile(firebaseUser);
+      }
       setLoading(false);
     });
 

@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
+import { Separator } from "@/components/ui/separator";
+import { persistUserProfile } from "@/lib/firestore-users";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Correo electrónico inválido." }),
@@ -44,7 +47,8 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginFormValues) {
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      await persistUserProfile(userCredential.user);
       toast({
         title: "Inicio de Sesión Exitoso",
         description: "¡Bienvenido de vuelta!",
@@ -70,10 +74,19 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="email"
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <GoogleAuthButton label="Iniciar sesión con Google" />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Separator className="flex-1" />
+            <span>o con tu correo</span>
+            <Separator className="flex-1" />
+          </div>
+        </div>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <FormField
+            control={form.control}
+            name="email"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Correo Electrónico</FormLabel>
@@ -97,17 +110,18 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Iniciar Sesión
-        </Button>
-        <p className="text-center text-sm text-muted-foreground">
-          ¿No tenés cuenta?{" "}
-          <Button variant="link" asChild className="p-0 h-auto">
-            <Link href="/register">Registrate</Link>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Iniciar Sesión
           </Button>
-        </p>
-      </form>
+          <p className="text-center text-sm text-muted-foreground">
+            ¿No tenés cuenta?{" "}
+            <Button variant="link" asChild className="p-0 h-auto">
+              <Link href="/register">Registrate</Link>
+            </Button>
+          </p>
+        </form>
+      </div>
     </Form>
   );
 }

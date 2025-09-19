@@ -23,7 +23,7 @@ import {
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { createRideAction } from "@/lib/actions/rides"; // Acción simulada
+import { createRide } from "@/lib/firestore-rides";
 import { useAuth } from "@/contexts/auth-provider";
 import { useRouter } from "next/navigation";
 
@@ -73,13 +73,7 @@ export function CreateRideForm() {
       driverName: user.displayName || user.email || "Conductor Anónimo",
     };
     
-    const formData = new FormData();
-    Object.entries(rideData).forEach(([key, value]) => {
-      formData.append(key, String(value));
-    });
-
-    // Placeholder: En una app real, esta acción interactuaría con Firestore
-    const result = await createRideAction(null, formData); 
+    const result = await createRide(rideData);
 
     if (result.success) {
       toast({

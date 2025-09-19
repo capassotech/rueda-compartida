@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import { GoogleAuthButton } from "@/components/auth/google-auth-button";
+import { Separator } from "@/components/ui/separator";
+import { persistUserProfile } from "@/lib/firestore-users";
 
 const registerSchema = z.object({
   displayName: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
@@ -48,7 +51,8 @@ export function RegisterForm() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.displayName });
-      
+      await persistUserProfile(userCredential.user);
+
       toast({
         title: "Registro Exitoso",
         description: "Tu cuenta ha sido creada.",
@@ -70,7 +74,16 @@ export function RegisterForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <GoogleAuthButton label="Registrate con Google" />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Separator className="flex-1" />
+            <span>o completá tus datos</span>
+            <Separator className="flex-1" />
+          </div>
+        </div>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField
           control={form.control}
           name="displayName"
@@ -110,17 +123,18 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Registrate
-        </Button>
-        <p className="text-center text-sm text-muted-foreground">
-          ¿Ya tenés cuenta?{" "}
-          <Button variant="link" asChild className="p-0 h-auto">
-            <Link href="/login">Iniciar Sesión</Link>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Registrate
           </Button>
-        </p>
-      </form>
+          <p className="text-center text-sm text-muted-foreground">
+            ¿Ya tenés cuenta?{" "}
+            <Button variant="link" asChild className="p-0 h-auto">
+              <Link href="/login">Iniciar Sesión</Link>
+            </Button>
+          </p>
+        </form>
+      </div>
     </Form>
   );
 }

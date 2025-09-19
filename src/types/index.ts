@@ -39,4 +39,6 @@ export type RideRequest = {
   time?: string; // Hora (desnormalizado)
   price?: number; // Precio por lugar (desnormalizado)
   createdAt?: Date; // Marca de tiempo de creación
+  statusUpdatedAt?: Date; // Marca de tiempo de última actualización
+  requestKey?: string; // Clave única compuesta para validaciones
 };

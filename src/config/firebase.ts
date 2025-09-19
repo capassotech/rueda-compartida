@@ -1,7 +1,12 @@
 
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps } from "firebase/app";
+import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 
 // IMPORTANT: Firebase Configuration
 // Your Firebase project credentials should be set as environment variables.
@@ -25,8 +30,24 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app = getApps()[0];
+
+if (!app) {
+  app = initializeApp(firebaseConfig);
+  initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+  });
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+if (typeof window !== "undefined") {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.warn("No se pudo establecer la persistencia del auth", error);
+  });
+}
 
 export { app, auth, db };
