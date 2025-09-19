@@ -13,6 +13,8 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  updateDoc,
+  writeBatch,
   where,
   type DocumentData,
   type DocumentSnapshot,
@@ -44,6 +46,78 @@ export async function createRide(input: CreateRideInput) {
         error instanceof Error
           ? error.message
           : "No se pudo crear el viaje.",
+    };
+  }
+}
+
+type UpdateRideData = Partial<
+  Pick<
+    Ride,
+    | "origin"
+    | "destination"
+    | "date"
+    | "time"
+    | "availableSeats"
+    | "price"
+    | "driverName"
+  >
+>;
+
+export async function updateRide(rideId: string, data: UpdateRideData) {
+  try {
+    const rideRef = doc(db, RIDES_COLLECTION, rideId);
+    const payload: Record<string, unknown> = { ...data };
+
+    if (data.availableSeats !== undefined) {
+      payload.availableSeats = Number(data.availableSeats);
+    }
+
+    if (data.price !== undefined) {
+      payload.price = Number(data.price);
+    }
+
+    payload.updatedAt = serverTimestamp();
+
+    await updateDoc(rideRef, payload);
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Error al actualizar el viaje", error);
+    return {
+      success: false as const,
+      message:
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar el viaje.",
+    };
+  }
+}
+
+export async function deleteRide(rideId: string) {
+  try {
+    const rideRef = doc(db, RIDES_COLLECTION, rideId);
+    const batch = writeBatch(db);
+    batch.delete(rideRef);
+
+    const requestsSnapshot = await getDocs(
+      query(collection(db, REQUESTS_COLLECTION), where("rideId", "==", rideId)),
+    );
+
+    requestsSnapshot.forEach((requestDoc) => {
+      batch.delete(requestDoc.ref);
+    });
+
+    await batch.commit();
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Error al eliminar el viaje", error);
+    return {
+      success: false as const,
+      message:
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar el viaje.",
     };
   }
 }
