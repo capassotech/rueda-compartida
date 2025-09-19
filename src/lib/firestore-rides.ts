@@ -179,6 +179,8 @@ export async function requestRide(input: RequestRideInput) {
       finalPrice: null,
       requestKey,
       status: "pending",
+      statusUpdatedAt: serverTimestamp(),
+      lastActionBy: "passenger",
       createdAt: serverTimestamp(),
     });
 
@@ -199,6 +201,7 @@ export async function acceptRideRequest(
   requestId: string,
   rideId: string,
   acceptedPrice: number,
+  actor: "driver" | "passenger" = "driver",
 ) {
   const finalPriceValue = Number(acceptedPrice);
   if (!Number.isFinite(finalPriceValue) || finalPriceValue <= 0) {
@@ -247,6 +250,7 @@ export async function acceptRideRequest(
         status: "accepted",
         finalPrice: finalPriceValue,
         statusUpdatedAt: serverTimestamp(),
+        lastActionBy: actor,
       });
     });
 
@@ -267,7 +271,11 @@ export async function acceptRideRequest(
   }
 }
 
-export async function rejectRideRequest(requestId: string, rideId: string) {
+export async function rejectRideRequest(
+  requestId: string,
+  rideId: string,
+  actor: "driver" | "passenger",
+) {
   try {
     const requestRef = doc(db, REQUESTS_COLLECTION, requestId);
     const rideRef = doc(db, RIDES_COLLECTION, rideId);
@@ -300,6 +308,7 @@ export async function rejectRideRequest(requestId: string, rideId: string) {
         status: "rejected",
         statusUpdatedAt: serverTimestamp(),
         finalPrice: null,
+        lastActionBy: actor,
       });
     });
 
@@ -355,6 +364,7 @@ export async function counterOfferRideRequest(
         counterOfferPrice: counterValue,
         finalPrice: null,
         statusUpdatedAt: serverTimestamp(),
+        lastActionBy: "driver",
       });
     });
 
@@ -417,6 +427,7 @@ export async function updateRideRequestOffer(
         counterOfferPrice: null,
         finalPrice: null,
         statusUpdatedAt: serverTimestamp(),
+        lastActionBy: "passenger",
       });
     });
 
@@ -561,6 +572,10 @@ function mapRideRequestSnapshot(
     createdAt: toDate(data.createdAt),
     statusUpdatedAt: toDate(data.statusUpdatedAt),
     requestKey: data.requestKey,
+    lastActionBy:
+      data.lastActionBy === "driver" || data.lastActionBy === "passenger"
+        ? data.lastActionBy
+        : undefined,
   } as RideRequest;
 }
 

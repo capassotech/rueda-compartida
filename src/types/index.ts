@@ -46,4 +46,5 @@ export type RideRequest = {
   createdAt?: Date; // Marca de tiempo de creación
   statusUpdatedAt?: Date; // Marca de tiempo de última actualización
   requestKey?: string; // Clave única compuesta para validaciones
+  lastActionBy?: "driver" | "passenger"; // Quién realizó la última acción relevante
 };

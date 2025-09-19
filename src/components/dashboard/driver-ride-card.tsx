@@ -159,7 +159,12 @@ export function DriverRideCard({
     }
 
     setProcessingRequestId(request.id);
-    const result = await acceptRideRequest(request.id, ride.id, acceptedPrice);
+    const result = await acceptRideRequest(
+      request.id,
+      ride.id,
+      acceptedPrice,
+      "driver",
+    );
     setProcessingRequestId(null);
 
     if (result.success && result.updatedRequest) {
@@ -191,7 +196,7 @@ export function DriverRideCard({
     }
 
     setProcessingRequestId(request.id);
-    const result = await rejectRideRequest(request.id, ride.id);
+    const result = await rejectRideRequest(request.id, ride.id, "driver");
     setProcessingRequestId(null);
 
     if (result.success && result.updatedRequest) {

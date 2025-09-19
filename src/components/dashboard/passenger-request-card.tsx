@@ -73,7 +73,11 @@ export function PassengerRequestCard({ request }: PassengerRequestCardProps) {
   const handleReject = async () => {
     if (!request.id) return;
     setCurrentAction("reject");
-    const result = await rejectRideRequest(request.id, request.rideId);
+    const result = await rejectRideRequest(
+      request.id,
+      request.rideId,
+      "passenger",
+    );
     setCurrentAction(null);
 
     if (result.success) {
@@ -113,6 +117,7 @@ export function PassengerRequestCard({ request }: PassengerRequestCardProps) {
       request.id,
       request.rideId,
       request.counterOfferPrice,
+      "passenger",
     );
     setCurrentAction(null);
 
