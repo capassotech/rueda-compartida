@@ -58,8 +58,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertTriangle,
+  ArrowLeftRight,
   CalendarIcon,
   CheckCircle,
+  HandCoins,
   Loader2,
   Pencil,
   Trash2,
@@ -69,9 +71,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  acceptRideRequest,
+  counterOfferRideRequest,
   deleteRide,
+  rejectRideRequest,
   updateRide,
-  updateRideRequestStatus,
 } from "@/lib/firestore-rides";
 import { rideFormSchema, type RideFormValues } from "@/lib/validators/ride";
 import { useToast } from "@/hooks/use-toast";
@@ -95,6 +99,11 @@ export function DriverRideCard({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSavingRide, setIsSavingRide] = useState(false);
   const [isDeletingRide, setIsDeletingRide] = useState(false);
+  const [requestToCounter, setRequestToCounter] = useState<RideRequest | null>(
+    null,
+  );
+  const [counterOfferValue, setCounterOfferValue] = useState<string>("");
+  const [isSendingCounterOffer, setIsSendingCounterOffer] = useState(false);
 
   const form = useForm<RideFormValues>({
     resolver: zodResolver(rideFormSchema),
@@ -109,8 +118,11 @@ export function DriverRideCard({
     form.reset(mapRideToFormValues(ride));
   }, [ride, form]);
 
-  const pendingRequests = useMemo(
-    () => requests.filter((req) => req.status === "pending"),
+  const activeRequests = useMemo(
+    () =>
+      requests.filter(
+        (req) => req.status === "pending" || req.status === "countered",
+      ),
     [requests],
   );
   const acceptedRequests = useMemo(
@@ -124,52 +136,132 @@ export function DriverRideCard({
     return parsed && isValid(parsed) ? format(parsed, "PPP") : ride.date;
   }, [ride.date]);
 
-  const handleManageRequest = async (
-    requestId: string,
-    newStatus: "accepted" | "rejected",
-  ) => {
-    setProcessingRequestId(requestId);
-    const result = await updateRideRequestStatus(
-      requestId,
-      ride.id || "",
-      newStatus,
+  const updateRequestState = (updatedRequest: RideRequest) => {
+    if (!updatedRequest.id) return;
+    setRequests((prevRequests) =>
+      prevRequests.map((req) =>
+        req.id === updatedRequest.id ? updatedRequest : req,
+      ),
     );
+  };
+
+  const handleAcceptRequest = async (
+    request: RideRequest,
+    acceptedPrice: number,
+  ) => {
+    if (!request.id || !ride.id) {
+      toast({
+        title: "Acción no disponible",
+        description: "No se encontró la información necesaria de la solicitud.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingRequestId(request.id);
+    const result = await acceptRideRequest(request.id, ride.id, acceptedPrice);
+    setProcessingRequestId(null);
 
     if (result.success && result.updatedRequest) {
-      setRequests((prevRequests) =>
-        prevRequests.map((req) =>
-          req.id === requestId
-            ? (result.updatedRequest as RideRequest)
-            : req,
-        ),
-      );
+      updateRequestState(result.updatedRequest as RideRequest);
       toast({
-        title: `Solicitud ${
-          newStatus === "accepted" ? "aceptada" : "rechazada"
-        }`,
-        description: `Se ha ${
-          newStatus === "accepted" ? "aceptado" : "rechazado"
-        } correctamente la solicitud.`,
-        action:
-          newStatus === "accepted" ? (
-            <CheckCircle className="text-green-500" />
-          ) : (
-            <XCircle className="text-red-500" />
-          ),
+        title: "Solicitud aceptada",
+        description: `Confirmaste el viaje por $${acceptedPrice.toFixed(2)}.`,
+        action: <CheckCircle className="text-green-500" />,
       });
     } else {
       toast({
-        title: "Acción Fallida",
+        title: "No se pudo aceptar",
         description:
-          result.message ||
-          `No se pudo ${
-            newStatus === "accepted" ? "aceptar" : "rechazar"
-          } la solicitud.`,
+          result.message || "Intentalo de nuevo en unos instantes.",
         variant: "destructive",
         action: <AlertTriangle className="text-red-500" />,
       });
     }
+  };
+
+  const handleRejectRequest = async (request: RideRequest) => {
+    if (!request.id || !ride.id) {
+      toast({
+        title: "Acción no disponible",
+        description: "No se encontró la información necesaria de la solicitud.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessingRequestId(request.id);
+    const result = await rejectRideRequest(request.id, ride.id);
     setProcessingRequestId(null);
+
+    if (result.success && result.updatedRequest) {
+      updateRequestState(result.updatedRequest as RideRequest);
+      toast({
+        title: "Solicitud rechazada",
+        description: "Le avisamos al pasajero del rechazo.",
+        action: <XCircle className="text-red-500" />,
+      });
+    } else {
+      toast({
+        title: "No se pudo rechazar",
+        description:
+          result.message || "Ocurrió un error al actualizar la solicitud.",
+        variant: "destructive",
+        action: <AlertTriangle className="text-red-500" />,
+      });
+    }
+  };
+
+  const openCounterOfferDialog = (request: RideRequest) => {
+    if (isSendingCounterOffer) return;
+    setRequestToCounter(request);
+    setCounterOfferValue(
+      (
+        request.counterOfferPrice ||
+        request.offeredPrice ||
+        request.price ||
+        ride.price ||
+        0
+      ).toString(),
+    );
+  };
+
+  const handleCounterOfferSubmit = async () => {
+    if (!requestToCounter?.id) return;
+    const parsedValue = Number(counterOfferValue);
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+      toast({
+        title: "Contraoferta inválida",
+        description: "Ingresá un monto válido para la contraoferta.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingCounterOffer(true);
+    const result = await counterOfferRideRequest(
+      requestToCounter.id,
+      parsedValue,
+    );
+    setIsSendingCounterOffer(false);
+
+    if (result.success && result.updatedRequest) {
+      updateRequestState(result.updatedRequest as RideRequest);
+      toast({
+        title: "Contraoferta enviada",
+        description: `Propusiste $${parsedValue.toFixed(2)} al pasajero.`,
+        action: <HandCoins className="text-primary" />,
+      });
+      setRequestToCounter(null);
+    } else {
+      toast({
+        title: "No se pudo contraofertar",
+        description:
+          result.message || "Reintentá más tarde.",
+        variant: "destructive",
+        action: <AlertTriangle className="text-red-500" />,
+      });
+    }
   };
 
   const handleEditSubmit = async (values: RideFormValues) => {
@@ -282,7 +374,7 @@ export function DriverRideCard({
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="requests">
             <AccordionTrigger>
-              Ver Solicitudes ({pendingRequests.length} pendientes,{' '}
+              Ver Solicitudes ({activeRequests.length} en curso,{' '}
               {acceptedRequests.length} aceptadas)
             </AccordionTrigger>
             <AccordionContent>
@@ -292,75 +384,243 @@ export function DriverRideCard({
                 </p>
               ) : (
                 <div className="space-y-4 pt-2">
-                  {requests.map((request) => (
-                    <div
-                      key={request.id}
-                      className="p-3 border rounded-md bg-background/50"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-semibold">
-                            {request.passengerName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Solicitado el:{' '}
-                            {request.createdAt
-                              ? new Date(request.createdAt).toLocaleDateString()
-                              : 'N/A'}
-                          </p>
+                  {requests.map((request) => {
+                    const passengerOffer =
+                      typeof request.offeredPrice === "number"
+                        ? request.offeredPrice
+                        : typeof request.price === "number"
+                          ? request.price
+                          : ride.price;
+                    const badgeVariant =
+                      request.status === "accepted"
+                        ? "default"
+                        : request.status === "rejected"
+                          ? "destructive"
+                          : request.status === "countered"
+                            ? "outline"
+                            : "secondary";
+
+                    return (
+                      <div
+                        key={request.id}
+                        className="p-3 border rounded-md bg-background/50"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-semibold">
+                              {request.passengerName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Solicitado el:{' '}
+                              {request.createdAt
+                                ? new Date(request.createdAt).toLocaleDateString()
+                                : 'N/A'}
+                            </p>
+                          </div>
+                          <Badge variant={badgeVariant} className="capitalize">
+                            {request.status}
+                          </Badge>
                         </div>
-                        <Badge
-                          variant={
-                            request.status === "accepted"
-                              ? "default"
-                              : request.status === "rejected"
-                                ? "destructive"
-                                : "secondary"
-                          }
-                          className="capitalize"
-                        >
-                          {request.status}
-                        </Badge>
+
+                        <div className="mt-3 space-y-2 text-sm">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <HandCoins className="h-4 w-4 text-primary" />
+                            <span>
+                              Oferta del pasajero: $
+                              {passengerOffer.toFixed(2)}
+                            </span>
+                          </div>
+                          {request.counterOfferPrice !== null &&
+                          request.counterOfferPrice !== undefined ? (
+                            <div className="flex items-center gap-2 text-primary">
+                              <ArrowLeftRight className="h-4 w-4" />
+                              <span>
+                                Contraoferta enviada: $
+                                {request.counterOfferPrice.toFixed(2)}
+                              </span>
+                            </div>
+                          ) : null}
+                          {request.finalPrice && request.status === "accepted" ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                              <CheckCircle className="h-4 w-4" />
+                              <span>
+                                Precio acordado: $
+                                {request.finalPrice.toFixed(2)}
+                              </span>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {request.status === "pending" ? (
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-500 border-green-500 hover:bg-green-500/10 hover:text-green-600"
+                              onClick={() =>
+                                handleAcceptRequest(request, passengerOffer)
+                              }
+                              disabled={processingRequestId === request.id}
+                            >
+                              {processingRequestId === request.id && (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              )}
+                              <UserCheck className="mr-1 h-4 w-4" /> Aceptar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-500 border-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
+                              onClick={() => openCounterOfferDialog(request)}
+                              disabled={processingRequestId === request.id}
+                            >
+                              <ArrowLeftRight className="mr-1 h-4 w-4" />
+                              Contraofertar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
+                              onClick={() => handleRejectRequest(request)}
+                              disabled={processingRequestId === request.id}
+                            >
+                              {processingRequestId === request.id && (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              )}
+                              <UserX className="mr-1 h-4 w-4" /> Rechazar
+                            </Button>
+                          </div>
+                        ) : null}
+
+                        {request.status === "countered" ? (
+                          <div className="mt-4 space-y-2">
+                            <p className="text-xs text-muted-foreground">
+                              Contraoferta enviada. Esperando respuesta del pasajero.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => openCounterOfferDialog(request)}
+                                disabled={
+                                  isSendingCounterOffer &&
+                                  requestToCounter?.id === request.id
+                                }
+                              >
+                                {isSendingCounterOffer &&
+                                requestToCounter?.id === request.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : null}
+                                <ArrowLeftRight className="mr-1 h-4 w-4" />
+                                Editar contraoferta
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
+                                onClick={() => handleRejectRequest(request)}
+                                disabled={processingRequestId === request.id}
+                              >
+                                {processingRequestId === request.id && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                <UserX className="mr-1 h-4 w-4" /> Rechazar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
+                        {request.status === "accepted" ? (
+                          <p className="mt-3 text-xs text-green-600">
+                            Pasajero confirmado. Coordiná los detalles del viaje.
+                          </p>
+                        ) : null}
+                        {request.status === "rejected" ? (
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            Esta solicitud fue rechazada.
+                          </p>
+                        ) : null}
                       </div>
-                      {request.status === "pending" && (
-                        <div className="mt-3 flex space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-500 border-green-500 hover:bg-green-500/10 hover:text-green-600"
-                            onClick={() =>
-                              handleManageRequest(request.id!, "accepted")
-                            }
-                            disabled={processingRequestId === request.id}
-                          >
-                            {processingRequestId === request.id && (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            )}
-                            <UserCheck className="mr-1 h-4 w-4" /> Aceptar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
-                            onClick={() =>
-                              handleManageRequest(request.id!, "rejected")
-                            }
-                            disabled={processingRequestId === request.id}
-                          >
-                            {processingRequestId === request.id && (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            )}
-                            <UserX className="mr-1 h-4 w-4" /> Rechazar
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+        <Dialog
+          open={Boolean(requestToCounter)}
+          onOpenChange={(open) => {
+            if (!open && !isSendingCounterOffer) {
+              setRequestToCounter(null);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Enviar contraoferta</DialogTitle>
+              <DialogDescription>
+                Proponé un nuevo precio para negociar con{' '}
+                {requestToCounter?.passengerName || "el pasajero"}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p>
+                  Oferta del pasajero: $
+                  {requestToCounter
+                    ? (
+                        typeof requestToCounter.offeredPrice === "number"
+                          ? requestToCounter.offeredPrice
+                          : typeof requestToCounter.price === "number"
+                            ? requestToCounter.price
+                            : ride.price
+                      ).toFixed(2)
+                    : ride.price.toFixed(2)}
+                </p>
+                {requestToCounter?.counterOfferPrice ? (
+                  <p>
+                    Tu última contraoferta: $
+                    {requestToCounter.counterOfferPrice.toFixed(2)}
+                  </p>
+                ) : null}
+              </div>
+              <div className="space-y-2">
+                <label
+                  className="text-sm font-medium"
+                  htmlFor={`counter-offer-${requestToCounter?.id ?? "ride"}`}
+                >
+                  Nuevo monto (en pesos)
+                </label>
+                <Input
+                  id={`counter-offer-${requestToCounter?.id ?? "ride"}`}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={counterOfferValue}
+                  onChange={(event) => setCounterOfferValue(event.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setRequestToCounter(null)}
+                disabled={isSendingCounterOffer}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCounterOfferSubmit}
+                disabled={isSendingCounterOffer}
+              >
+                {isSendingCounterOffer && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Enviar contraoferta
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row gap-2">
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

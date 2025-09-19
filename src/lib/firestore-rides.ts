@@ -21,7 +21,7 @@ import {
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
-import type { Ride, RideRequest } from "@/types";
+import type { Ride, RideRequest, RideRequestStatus } from "@/types";
 
 const RIDES_COLLECTION = "rides";
 const REQUESTS_COLLECTION = "rideRequests";
@@ -133,6 +133,7 @@ export type RequestRideInput = {
   date: string;
   time: string;
   price: number;
+  offeredPrice: number;
 };
 
 export async function requestRide(input: RequestRideInput) {
@@ -173,6 +174,9 @@ export async function requestRide(input: RequestRideInput) {
       ...input,
       driverName: rideData.driverName ?? input.driverName,
       price: Number(input.price),
+      offeredPrice: Number(input.offeredPrice),
+      counterOfferPrice: null,
+      finalPrice: null,
       requestKey,
       status: "pending",
       createdAt: serverTimestamp(),
@@ -191,11 +195,19 @@ export async function requestRide(input: RequestRideInput) {
   }
 }
 
-export async function updateRideRequestStatus(
+export async function acceptRideRequest(
   requestId: string,
   rideId: string,
-  newStatus: "accepted" | "rejected",
+  acceptedPrice: number,
 ) {
+  const finalPriceValue = Number(acceptedPrice);
+  if (!Number.isFinite(finalPriceValue) || finalPriceValue <= 0) {
+    return {
+      success: false as const,
+      message: "Ingresá un precio válido para aceptar la solicitud.",
+    };
+  }
+
   try {
     const requestRef = doc(db, REQUESTS_COLLECTION, requestId);
     const rideRef = doc(db, RIDES_COLLECTION, rideId);
@@ -212,30 +224,28 @@ export async function updateRideRequestStatus(
       }
 
       const requestData = requestSnap.data() as DocumentData;
-      const currentStatus = requestData.status as RideRequest["status"];
+      const rideData = rideSnap.data() as DocumentData;
+      const currentStatus = (requestData.status ?? "pending") as RideRequestStatus;
 
-      if (currentStatus === newStatus) {
-        return;
+      if (currentStatus === "rejected") {
+        throw new Error("No se puede aceptar una solicitud rechazada.");
       }
 
-      if (currentStatus === "accepted" && newStatus !== "accepted") {
-        transaction.update(rideRef, {
-          availableSeats: increment(1),
-        });
-      } else if (currentStatus !== "accepted" && newStatus === "accepted") {
-        const rideData = rideSnap.data() as DocumentData;
+      if (currentStatus !== "accepted") {
         if ((rideData.availableSeats ?? 0) <= 0) {
           throw new Error(
             "No hay lugares disponibles para aceptar esta solicitud.",
           );
         }
+
         transaction.update(rideRef, {
           availableSeats: increment(-1),
         });
       }
 
       transaction.update(requestRef, {
-        status: newStatus,
+        status: "accepted",
+        finalPrice: finalPriceValue,
         statusUpdatedAt: serverTimestamp(),
       });
     });
@@ -246,13 +256,183 @@ export async function updateRideRequestStatus(
       updatedRequest: mapRideRequestSnapshot(updatedSnapshot),
     };
   } catch (error) {
-    console.error("Error al actualizar el estado de la solicitud", error);
+    console.error("Error al aceptar la solicitud", error);
     return {
       success: false as const,
       message:
         error instanceof Error
           ? error.message
-          : "No se pudo actualizar la solicitud.",
+          : "No se pudo aceptar la solicitud.",
+    };
+  }
+}
+
+export async function rejectRideRequest(requestId: string, rideId: string) {
+  try {
+    const requestRef = doc(db, REQUESTS_COLLECTION, requestId);
+    const rideRef = doc(db, RIDES_COLLECTION, rideId);
+
+    await runTransaction(db, async (transaction) => {
+      const requestSnap = await transaction.get(requestRef);
+      if (!requestSnap.exists()) {
+        throw new Error("La solicitud no existe.");
+      }
+
+      const rideSnap = await transaction.get(rideRef);
+      if (!rideSnap.exists()) {
+        throw new Error("El viaje no existe.");
+      }
+
+      const requestData = requestSnap.data() as DocumentData;
+      const currentStatus = (requestData.status ?? "pending") as RideRequestStatus;
+
+      if (currentStatus === "rejected") {
+        return;
+      }
+
+      if (currentStatus === "accepted") {
+        transaction.update(rideRef, {
+          availableSeats: increment(1),
+        });
+      }
+
+      transaction.update(requestRef, {
+        status: "rejected",
+        statusUpdatedAt: serverTimestamp(),
+        finalPrice: null,
+      });
+    });
+
+    const updatedSnapshot = await getDoc(requestRef);
+    return {
+      success: true as const,
+      updatedRequest: mapRideRequestSnapshot(updatedSnapshot),
+    };
+  } catch (error) {
+    console.error("Error al rechazar la solicitud", error);
+    return {
+      success: false as const,
+      message:
+        error instanceof Error
+          ? error.message
+          : "No se pudo rechazar la solicitud.",
+    };
+  }
+}
+
+export async function counterOfferRideRequest(
+  requestId: string,
+  counterOfferPrice: number,
+) {
+  const counterValue = Number(counterOfferPrice);
+  if (!Number.isFinite(counterValue) || counterValue <= 0) {
+    return {
+      success: false as const,
+      message: "Ingresá un valor válido para la contraoferta.",
+    };
+  }
+
+  try {
+    const requestRef = doc(db, REQUESTS_COLLECTION, requestId);
+
+    await runTransaction(db, async (transaction) => {
+      const requestSnap = await transaction.get(requestRef);
+      if (!requestSnap.exists()) {
+        throw new Error("La solicitud no existe.");
+      }
+
+      const requestData = requestSnap.data() as DocumentData;
+      const currentStatus = (requestData.status ?? "pending") as RideRequestStatus;
+
+      if (currentStatus === "accepted") {
+        throw new Error(
+          "La solicitud ya fue aceptada, no se puede contraofertar.",
+        );
+      }
+
+      transaction.update(requestRef, {
+        status: "countered",
+        counterOfferPrice: counterValue,
+        finalPrice: null,
+        statusUpdatedAt: serverTimestamp(),
+      });
+    });
+
+    const updatedSnapshot = await getDoc(requestRef);
+    return {
+      success: true as const,
+      updatedRequest: mapRideRequestSnapshot(updatedSnapshot),
+    };
+  } catch (error) {
+    console.error("Error al contraofertar la solicitud", error);
+    return {
+      success: false as const,
+      message:
+        error instanceof Error
+          ? error.message
+          : "No se pudo enviar la contraoferta.",
+    };
+  }
+}
+
+export async function updateRideRequestOffer(
+  requestId: string,
+  offeredPrice: number,
+) {
+  const offerValue = Number(offeredPrice);
+  if (!Number.isFinite(offerValue) || offerValue <= 0) {
+    return {
+      success: false as const,
+      message: "Ingresá un valor válido para la oferta.",
+    };
+  }
+
+  try {
+    const requestRef = doc(db, REQUESTS_COLLECTION, requestId);
+
+    await runTransaction(db, async (transaction) => {
+      const requestSnap = await transaction.get(requestRef);
+      if (!requestSnap.exists()) {
+        throw new Error("La solicitud no existe.");
+      }
+
+      const requestData = requestSnap.data() as DocumentData;
+      const currentStatus = (requestData.status ?? "pending") as RideRequestStatus;
+
+      if (currentStatus === "accepted") {
+        throw new Error(
+          "El viaje ya fue aceptado, no es posible modificar la oferta.",
+        );
+      }
+
+      if (currentStatus === "rejected") {
+        throw new Error(
+          "La solicitud fue rechazada. Generá una nueva solicitud para negociar de nuevo.",
+        );
+      }
+
+      transaction.update(requestRef, {
+        status: "pending",
+        offeredPrice: offerValue,
+        counterOfferPrice: null,
+        finalPrice: null,
+        statusUpdatedAt: serverTimestamp(),
+      });
+    });
+
+    const updatedSnapshot = await getDoc(requestRef);
+    return {
+      success: true as const,
+      updatedRequest: mapRideRequestSnapshot(updatedSnapshot),
+    };
+  } catch (error) {
+    console.error("Error al actualizar la oferta", error);
+    return {
+      success: false as const,
+      message:
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar la oferta.",
     };
   }
 }
@@ -356,12 +536,28 @@ function mapRideRequestSnapshot(
     passengerUid: data.passengerUid,
     passengerName: data.passengerName,
     driverUid: data.driverUid,
-    status: data.status,
+    status: (data.status as RideRequestStatus) ?? "pending",
     origin: data.origin,
     destination: data.destination,
     date: data.date,
     time: data.time,
     price: typeof data.price === "number" ? data.price : Number(data.price ?? 0),
+    offeredPrice:
+      typeof data.offeredPrice === "number"
+        ? data.offeredPrice
+        : Number(data.offeredPrice ?? data.price ?? 0),
+    counterOfferPrice:
+      typeof data.counterOfferPrice === "number"
+        ? data.counterOfferPrice
+        : data.counterOfferPrice === null || data.counterOfferPrice === undefined
+          ? null
+          : Number(data.counterOfferPrice),
+    finalPrice:
+      typeof data.finalPrice === "number"
+        ? data.finalPrice
+        : data.finalPrice === null || data.finalPrice === undefined
+          ? null
+          : Number(data.finalPrice),
     createdAt: toDate(data.createdAt),
     statusUpdatedAt: toDate(data.statusUpdatedAt),
     requestKey: data.requestKey,

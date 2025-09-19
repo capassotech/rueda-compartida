@@ -3,7 +3,24 @@
 import type { Ride } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Clock, MapPin, Users, CircleDollarSign, CheckCircle, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  CalendarDays,
+  Clock,
+  MapPin,
+  Users,
+  CircleDollarSign,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-provider";
 import { requestRide } from "@/lib/firestore-rides";
@@ -18,21 +35,48 @@ export function RideCard({ ride }: RideCardProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isRequesting, setIsRequesting] = useState(false);
+  const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
+  const [offerValue, setOfferValue] = useState(() => ride.price.toString());
 
-  const handleRequestRide = async () => {
+  const handleOpenOfferDialog = () => {
     if (!user) {
-      toast({ 
-        title: "Inicia Sesión", 
-        description: "Debés iniciar sesión para solicitar un viaje.", 
-        variant: "destructive" 
+      toast({
+        title: "Inicia Sesión",
+        description: "Debés iniciar sesión para solicitar un viaje.",
+        variant: "destructive",
       });
       return;
     }
+
     if (user.uid === ride.driverUid) {
-      toast({ 
-        title: "Acción No Permitida", 
-        description: "No puedes solicitar tu propio viaje.", 
-        variant: "destructive" 
+      toast({
+        title: "Acción No Permitida",
+        description: "No puedes solicitar tu propio viaje.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setOfferValue((ride.price ?? 0).toString());
+    setIsOfferDialogOpen(true);
+  };
+
+  const handleRequestRide = async () => {
+    const parsedOffer = Number(offerValue);
+    if (!Number.isFinite(parsedOffer) || parsedOffer <= 0) {
+      toast({
+        title: "Oferta inválida",
+        description: "Ingresá un monto válido para tu oferta.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Inicia Sesión",
+        description: "Debés iniciar sesión para solicitar un viaje.",
+        variant: "destructive",
       });
       return;
     }
@@ -49,20 +93,22 @@ export function RideCard({ ride }: RideCardProps) {
       date: ride.date,
       time: ride.time,
       price: ride.price,
+      offeredPrice: parsedOffer,
     });
 
     if (result.success) {
-      toast({ 
-        title: "Viaje Solicitado!", 
-        description: "Tu solicitud fue enviada al conductor.",
-        action: <CheckCircle className="text-green-500" />
+      toast({
+        title: "Viaje Solicitado!",
+        description: "Tu oferta fue enviada al conductor para su revisión.",
+        action: <CheckCircle className="text-green-500" />,
       });
+      setIsOfferDialogOpen(false);
     } else {
-      toast({ 
-        title: "Solicitud Fallida", 
-        description: result.message || "No se pudo enviar la solicitud.", 
+      toast({
+        title: "Solicitud Fallida",
+        description: result.message || "No se pudo enviar la solicitud.",
         variant: "destructive",
-        action: <AlertTriangle className="text-red-500" />
+        action: <AlertTriangle className="text-red-500" />,
       });
     }
     setIsRequesting(false);
@@ -102,14 +148,63 @@ export function RideCard({ ride }: RideCardProps) {
       </CardContent>
       <CardFooter>
         {user?.uid !== ride.driverUid ? (
-          <Button className="w-full" onClick={handleRequestRide} disabled={isRequesting || ride.availableSeats === 0}>
-            {isRequesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {ride.availableSeats > 0 ? 'Solicitar Viaje' : 'No Hay Lugares Disponibles'}
+          <Button
+            className="w-full"
+            onClick={handleOpenOfferDialog}
+            disabled={ride.availableSeats === 0}
+          >
+            {ride.availableSeats > 0
+              ? "Solicitar Viaje"
+              : "No Hay Lugares Disponibles"}
           </Button>
         ) : (
-          <Button className="w-full" disabled variant="outline">Este es tu viaje</Button>
+          <Button className="w-full" disabled variant="outline">
+            Este es tu viaje
+          </Button>
         )}
       </CardFooter>
+
+      <Dialog open={isOfferDialogOpen} onOpenChange={setIsOfferDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ofertar un lugar</DialogTitle>
+            <DialogDescription>
+              Proponé el precio que estás dispuesto a pagar por este viaje.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Precio sugerido del viaje: ${ride.price.toFixed(2)}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor={`offer-${ride.id}`}>
+                Tu oferta (en pesos)
+              </label>
+              <Input
+                id={`offer-${ride.id}`}
+                type="number"
+                min="0"
+                step="0.01"
+                value={offerValue}
+                onChange={(event) => setOfferValue(event.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOfferDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleRequestRide} disabled={isRequesting}>
+              {isRequesting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Enviar oferta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -24,6 +24,8 @@ export type Ride = {
   createdAt?: Date; // Marca de tiempo de creación (opcional)
 };
 
+export type RideRequestStatus = 'pending' | 'countered' | 'accepted' | 'rejected';
+
 // Tipo para las solicitudes de viaje
 export type RideRequest = {
   id?: string; // ID del documento en Firestore
@@ -32,12 +34,15 @@ export type RideRequest = {
   passengerUid: string; // UID del pasajero
   passengerName: string; // Nombre del pasajero
   driverUid: string; // UID del conductor (para notificaciones o consultas)
-  status: 'pending' | 'accepted' | 'rejected'; // Estado de la solicitud
+  status: RideRequestStatus; // Estado de la solicitud
   origin?: string; // Origen (desnormalizado)
   destination?: string; // Destino (desnormalizado)
   date?: string; // Fecha (desnormalizado)
   time?: string; // Hora (desnormalizado)
   price?: number; // Precio por lugar (desnormalizado)
+  offeredPrice?: number; // Precio ofertado por el pasajero
+  counterOfferPrice?: number | null; // Contraoferta del conductor, si existe
+  finalPrice?: number | null; // Precio final acordado cuando el viaje es aceptado
   createdAt?: Date; // Marca de tiempo de creación
   statusUpdatedAt?: Date; // Marca de tiempo de última actualización
   requestKey?: string; // Clave única compuesta para validaciones
