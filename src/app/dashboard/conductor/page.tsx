@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Loader2, PlusCircle } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 import { AppLayout } from "@/components/layout/app-layout";
 import { DriverRideCard } from "@/components/dashboard/driver-ride-card";
@@ -15,7 +16,11 @@ import {
   subscribeToDriverRides,
   subscribeToDriverRequests,
 } from "@/lib/firestore-rides";
-import { useNotifications } from "@/contexts/notification-provider";
+import {
+  useNotifications,
+  type NotificationEntry,
+} from "@/contexts/notification-provider";
+import { cn } from "@/lib/utils";
 
 type RideFilter = "all" | "pending" | "countered" | "accepted" | "no-requests";
 
@@ -44,7 +49,13 @@ export default function DriverDashboardPage() {
   const [rideRequests, setRideRequests] = useState<RideRequest[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<RideFilter>("all");
-  const { notifications, markAllAsRead } = useNotifications();
+  const searchParams = useSearchParams();
+  const { notifications, markAllAsRead, markAsRead } = useNotifications();
+  const [highlightedNotificationId, setHighlightedNotificationId] = useState<string | null>(
+    null,
+  );
+  const [highlightedRequestId, setHighlightedRequestId] = useState<string | null>(null);
+  const notificationsSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -78,6 +89,67 @@ export default function DriverDashboardPage() {
       unsubscribeRequests();
     };
   }, [user?.uid, user?.displayName, user?.email]);
+
+  useEffect(() => {
+    const notificationParam = searchParams.get("notificacion");
+    const requestParam = searchParams.get("solicitud");
+
+    setHighlightedNotificationId(notificationParam);
+    setHighlightedRequestId(requestParam);
+
+    if ((notificationParam || requestParam) && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (notificationParam) {
+        url.searchParams.delete("notificacion");
+      }
+      if (requestParam) {
+        url.searchParams.delete("solicitud");
+      }
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!highlightedRequestId) return;
+
+    const targetRequest = rideRequests.find(
+      (request) => request.id === highlightedRequestId,
+    );
+    if (!targetRequest) return;
+
+    if (targetRequest.status === "pending" && selectedFilter !== "pending") {
+      setSelectedFilter("pending");
+    }
+
+    if (targetRequest.status === "countered" && selectedFilter !== "countered") {
+      setSelectedFilter("countered");
+    }
+
+    if (targetRequest.status === "accepted" && selectedFilter !== "accepted") {
+      setSelectedFilter("accepted");
+    }
+
+    if (typeof window === "undefined") return;
+
+    const timer = window.setTimeout(() => {
+      if (targetRequest.rideId) {
+        const rideElement = document.getElementById(`ride-${targetRequest.rideId}`);
+        if (rideElement) {
+          rideElement.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+      }
+
+      notificationsSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 200);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [highlightedRequestId, rideRequests, selectedFilter]);
 
   const ridesWithRequests = useMemo<RideWithRequests[]>(() => {
     const requestsByRide = rideRequests.reduce<Record<string, RideRequest[]>>(
@@ -211,6 +283,38 @@ export default function DriverDashboardPage() {
     () => driverNotifications.filter((notification) => !notification.read).length,
     [driverNotifications],
   );
+
+  useEffect(() => {
+    if (!highlightedNotificationId) return;
+
+    const targetNotification = driverNotifications.find(
+      (notification) => notification.id === highlightedNotificationId,
+    );
+
+    if (targetNotification && !targetNotification.read) {
+      markAsRead(targetNotification.id);
+    }
+  }, [driverNotifications, highlightedNotificationId, markAsRead]);
+
+  const handleNotificationCardClick = (notification: NotificationEntry) => {
+    markAsRead(notification.id);
+    setHighlightedNotificationId(notification.id);
+
+    if (notification.requestId) {
+      setHighlightedRequestId(notification.requestId);
+    } else {
+      setHighlightedRequestId(null);
+    }
+
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        notificationsSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    }
+  };
 
   const lastUpdatedText = driverStats.latestActivity
     ? formatDistanceToNow(driverStats.latestActivity, { addSuffix: true, locale: es })
@@ -401,9 +505,21 @@ export default function DriverDashboardPage() {
             </div>
           ) : filteredRides.length > 0 ? (
             <div className="space-y-4">
-              {filteredRides.map(({ ride, requests }) => (
-                <DriverRideCard key={ride.id} ride={ride} requests={requests} />
-              ))}
+              {filteredRides.map(({ ride, requests }) => {
+                const shouldHighlightRequest =
+                  highlightedRequestId &&
+                  requests.some((request) => request.id === highlightedRequestId);
+
+                return (
+                  <DriverRideCard
+                    key={ride.id}
+                    ride={ride}
+                    requests={requests}
+                    highlightedRequestId={shouldHighlightRequest ? highlightedRequestId : null}
+                    isHighlighted={Boolean(shouldHighlightRequest)}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-lg border border-dashed p-8 text-center">
@@ -430,7 +546,10 @@ export default function DriverDashboardPage() {
           )}
         </section>
 
-        <section className="space-y-4 rounded-lg border p-4">
+        <section
+          ref={notificationsSectionRef}
+          className="space-y-4 rounded-lg border p-4"
+        >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Notificaciones</h2>
@@ -447,7 +566,11 @@ export default function DriverDashboardPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={markAllAsRead}
+                onClick={() => {
+                  markAllAsRead();
+                  setHighlightedNotificationId(null);
+                  setHighlightedRequestId(null);
+                }}
                 disabled={driverNotifications.length === 0 || driverUnread === 0}
               >
                 Marcar como leídas
@@ -460,29 +583,48 @@ export default function DriverDashboardPage() {
             </p>
           ) : (
             <div className="space-y-3">
-              {driverNotifications.slice(0, 6).map((notification) => (
-                <div
-                  key={notification.id}
-                  className="space-y-1 rounded-md border border-border/60 p-3"
-                >
-                  <p
-                    className={`text-sm font-medium ${
-                      notification.read ? "text-muted-foreground" : "text-foreground"
-                    }`}
+              {driverNotifications.slice(0, 6).map((notification) => {
+                const isHighlighted =
+                  highlightedNotificationId === notification.id ||
+                  (highlightedRequestId &&
+                    notification.requestId &&
+                    highlightedRequestId === notification.requestId);
+
+                return (
+                  <button
+                    key={notification.id}
+                    type="button"
+                    onClick={() => handleNotificationCardClick(notification)}
+                    className={cn(
+                      "w-full space-y-1 rounded-md border border-border/60 p-3 text-left transition-colors",
+                      notification.read
+                        ? "bg-background hover:border-border"
+                        : "bg-muted/60 hover:bg-muted",
+                      isHighlighted && "border-primary/80 ring-2 ring-primary/40",
+                    )}
                   >
-                    {notification.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {notification.description}
-                  </p>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {formatDistanceToNow(notification.createdAt, {
-                      addSuffix: true,
-                      locale: es,
-                    })}
-                  </p>
-                </div>
-              ))}
+                    <p
+                      className={cn(
+                        "text-sm font-medium",
+                        notification.read
+                          ? "text-muted-foreground"
+                          : "text-foreground",
+                      )}
+                    >
+                      {notification.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {notification.description}
+                    </p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      {formatDistanceToNow(notification.createdAt, {
+                        addSuffix: true,
+                        locale: es,
+                      })}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           )}
         </section>

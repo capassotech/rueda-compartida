@@ -33,8 +33,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useNotifications } from '@/contexts/notification-provider';
-import type { NotificationType } from '@/contexts/notification-provider';
+import {
+  useNotifications,
+  type NotificationEntry,
+  type NotificationType,
+} from '@/contexts/notification-provider';
 import { cn } from '@/lib/utils';
 
 const notificationIcons: Record<NotificationType, { Icon: LucideIcon; className: string }> = {
@@ -46,15 +49,43 @@ const notificationIcons: Record<NotificationType, { Icon: LucideIcon; className:
 export function Navbar() {
   const { user } = useAuth();
   const router = useRouter();
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead } = useNotifications();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const latestNotifications = notifications.slice(0, 10);
 
   const handleNotificationsOpenChange = (open: boolean) => {
     setIsNotificationsOpen(open);
-    if (open) {
-      markAllAsRead();
+  };
+
+  const buildNotificationUrl = (notification: NotificationEntry) => {
+    const params = new URLSearchParams();
+    params.set('notificacion', notification.id);
+    if (notification.requestId) {
+      params.set('solicitud', notification.requestId);
     }
+    if (notification.rideId) {
+      params.set('viaje', notification.rideId);
+    }
+
+    const queryString = params.toString();
+
+    if (notification.source === 'driver') {
+      return `/dashboard/conductor${queryString ? `?${queryString}` : ''}`;
+    }
+
+    if (notification.source === 'passenger') {
+      return `/dashboard/pasajero${queryString ? `?${queryString}` : ''}`;
+    }
+
+    return '/';
+  };
+
+  const handleNotificationClick = (notification: NotificationEntry) => {
+    markAsRead(notification.id);
+    setIsNotificationsOpen(false);
+
+    const targetUrl = buildNotificationUrl(notification);
+    router.push(targetUrl);
   };
 
   const handleLogout = async () => {
@@ -150,10 +181,12 @@ export function Navbar() {
                           );
 
                           return (
-                            <div
+                            <button
                               key={notification.id}
+                              type="button"
+                              onClick={() => handleNotificationClick(notification)}
                               className={cn(
-                                "flex items-start gap-3 px-4 py-3 text-sm transition-colors",
+                                "flex w-full items-start gap-3 px-4 py-3 text-left text-sm transition-colors",
                                 notification.read
                                   ? "hover:bg-muted/60"
                                   : "bg-muted/60 hover:bg-muted",
@@ -187,7 +220,7 @@ export function Navbar() {
                                   {relativeTime}
                                 </p>
                               </div>
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
