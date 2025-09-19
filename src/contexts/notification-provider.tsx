@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const MAX_NOTIFICATIONS = 30;
 const LAST_SEEN_STORAGE_KEY = "rc:last-seen";
+const LAST_SEEN_FALLBACK = 0;
 
 export type NotificationType = "new-request" | "counter-offer" | "rejection";
 export type NotificationSource = "driver" | "passenger";
@@ -83,13 +84,13 @@ function buildNotificationId(
 }
 
 function loadLastSeen(uid: string, role: NotificationSource) {
-  if (typeof window === "undefined") return Date.now();
+  if (typeof window === "undefined") return LAST_SEEN_FALLBACK;
   const stored = window.localStorage.getItem(
     `${LAST_SEEN_STORAGE_KEY}:${uid}:${role}`,
   );
-  if (!stored) return Date.now();
+  if (!stored) return LAST_SEEN_FALLBACK;
   const parsed = Number(stored);
-  return Number.isFinite(parsed) ? parsed : Date.now();
+  return Number.isFinite(parsed) ? parsed : LAST_SEEN_FALLBACK;
 }
 
 function persistLastSeen(uid: string, role: NotificationSource, value: number) {
