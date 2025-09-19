@@ -80,13 +80,13 @@ export default function HomePage() {
         
         <section className="py-12 md:py-20 w-full">
           <div className="relative aspect-[2/1] w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-2xl">
-             <Image 
+             {/* <Image 
                 src="https://placehold.co/1200x600.png " 
                 alt="Ilustración de viaje compartido" 
                 layout="fill"
                 objectFit="cover"
                 data-ai-hint="viaje en carretera"
-              />
+              /> */}
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <h3 className="text-4xl font-bold text-white p-4">Compartí el viaje, compartí el costo</h3>
               </div>
