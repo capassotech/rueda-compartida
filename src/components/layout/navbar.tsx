@@ -117,25 +117,12 @@ export function Navbar() {
   return (
     <nav className="bg-card shadow-md">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex flex-col gap-3 py-3 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:py-0">
           <Link href="/" className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
             <Car className="h-8 w-8" />
             <span className="text-xl font-bold">Rueda Compartida</span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <Link href="/buscar-viajes">
-                <Search className="mr-2 h-4 w-4" />
-                Buscar Viajes
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-              <Link href="/crear-viaje">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Ofrecer Viaje
-              </Link>
-            </Button>
-            
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap sm:gap-4">
             {user ? (
               <>
                 <DropdownMenu
