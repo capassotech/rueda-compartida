@@ -149,6 +149,13 @@ export async function requestRide(input: RequestRideInput) {
 
     const rideData = rideSnap.data() as DocumentData;
 
+    if ((rideData.driverUid ?? null) === input.passengerUid) {
+      return {
+        success: false as const,
+        message: "No podés solicitar tu propio viaje.",
+      };
+    }
+
     if ((rideData.availableSeats ?? 0) <= 0) {
       return {
         success: false as const,
