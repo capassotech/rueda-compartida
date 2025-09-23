@@ -103,7 +103,7 @@ function RideListings() {
 
         return createdAtA - createdAtB;
       });
-  }, [rides, origin, destination, date]);
+  }, [rides, normalizedOrigin, normalizedDestination, date]);
 
 
   if (!normalizedOrigin && !normalizedDestination && !date) {
