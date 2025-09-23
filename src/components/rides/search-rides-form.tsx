@@ -23,7 +23,9 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { toLocalDate } from "@/lib/date";
 
 const searchRidesSchema = z.object({
   origin: z.string().min(1, "El origen es requerido."),
@@ -37,12 +39,15 @@ export function SearchRidesForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const dateParam = searchParams.get("date");
+  const parsedDate = dateParam ? toLocalDate(dateParam) : null;
+
   const form = useForm<SearchRidesFormValues>({
     resolver: zodResolver(searchRidesSchema),
     defaultValues: {
-      origin: searchParams.get('origin') || "",
-      destination: searchParams.get('destination') || "",
-      date: searchParams.get('date') ? new Date(searchParams.get('date')!) : new Date(),
+      origin: searchParams.get("origin") || "",
+      destination: searchParams.get("destination") || "",
+      date: parsedDate ?? new Date(),
     },
   });
   const { formState: { isSubmitting } } = form;
@@ -103,7 +108,7 @@ export function SearchRidesForm() {
                         )}
                       >
                         {field.value ? (
-                          format(field.value, "PPP")
+                          format(field.value, "PPP", { locale: es })
                         ) : (
                           <span>Seleccioná una fecha</span>
                         )}
