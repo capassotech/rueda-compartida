@@ -157,6 +157,8 @@ export default function PassengerDashboardPage() {
     { value: "rejected", label: "Rechazadas", count: stats.rejected },
   ];
 
+  const summaryTileClass = "space-y-1 rounded-lg border border-border/60 p-3";
+
   if (loading || !user) {
     return (
       <AppLayout>
@@ -201,24 +203,24 @@ export default function PassengerDashboardPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Resumen rápido
           </h2>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-            <div className="space-y-1">
+          <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            <div className={summaryTileClass}>
               <p className="text-xs uppercase text-muted-foreground">Enviadas</p>
               <p className="text-lg font-semibold">{stats.total}</p>
             </div>
-            <div className="space-y-1">
+            <div className={summaryTileClass}>
               <p className="text-xs uppercase text-muted-foreground">Pendientes</p>
               <p className="text-lg font-semibold">{stats.pending}</p>
             </div>
-            <div className="space-y-1">
+            <div className={summaryTileClass}>
               <p className="text-xs uppercase text-muted-foreground">Contraofertas</p>
               <p className="text-lg font-semibold">{stats.countered}</p>
             </div>
-            <div className="space-y-1">
+            <div className={summaryTileClass}>
               <p className="text-xs uppercase text-muted-foreground">Confirmadas</p>
               <p className="text-lg font-semibold">{stats.accepted}</p>
             </div>
-            <div className="space-y-1">
+            <div className={summaryTileClass}>
               <p className="text-xs uppercase text-muted-foreground">Rechazadas</p>
               <p className="text-lg font-semibold">{stats.rejected}</p>
             </div>
