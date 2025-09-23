@@ -57,12 +57,20 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AlertTriangle,
   ArrowLeftRight,
   CalendarIcon,
   CheckCircle,
   HandCoins,
   Loader2,
+  MoreHorizontal,
   Pencil,
   Trash2,
   UserCheck,
@@ -433,6 +441,11 @@ export function DriverRideCard({
                           : request.status === "countered"
                             ? "outline"
                             : "secondary";
+                    const isProcessingRequest =
+                      processingRequestId === request.id;
+                    const isCounterOfferUpdating =
+                      isSendingCounterOffer &&
+                      requestToCounter?.id === request.id;
 
                     return (
                       <div
@@ -491,44 +504,112 @@ export function DriverRideCard({
                         </div>
 
                         {request.status === "pending" ? (
-                          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full sm:w-auto text-green-500 border-green-500 hover:bg-green-500/10 hover:text-green-600"
-                              onClick={() =>
-                                handleAcceptRequest(request, passengerOffer)
-                              }
-                              disabled={processingRequestId === request.id}
-                            >
-                              {processingRequestId === request.id && (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              )}
-                              <UserCheck className="mr-1 h-4 w-4" /> Aceptar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full sm:w-auto text-blue-500 border-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
-                              onClick={() => openCounterOfferDialog(request)}
-                              disabled={processingRequestId === request.id}
-                            >
-                              <ArrowLeftRight className="mr-1 h-4 w-4" />
-                              Contraofertar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full sm:w-auto text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
-                              onClick={() => handleRejectRequest(request)}
-                              disabled={processingRequestId === request.id}
-                            >
-                              {processingRequestId === request.id && (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              )}
-                              <UserX className="mr-1 h-4 w-4" /> Rechazar
-                            </Button>
-                          </div>
+                          <>
+                            <div className="mt-4 sm:hidden">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full justify-between"
+                                    disabled={isProcessingRequest}
+                                  >
+                                    <span className="font-medium">
+                                      Gestionar solicitud
+                                    </span>
+                                    {isProcessingRequest ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-60">
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      void handleAcceptRequest(
+                                        request,
+                                        passengerOffer,
+                                      );
+                                    }}
+                                    disabled={isProcessingRequest}
+                                    className="text-green-600 focus:bg-green-500/10 focus:text-green-600"
+                                  >
+                                    {isProcessingRequest ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <UserCheck className="h-4 w-4" />
+                                    )}
+                                    <span>Aceptar</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      openCounterOfferDialog(request);
+                                    }}
+                                    disabled={isProcessingRequest}
+                                    className="text-blue-600 focus:bg-blue-500/10 focus:text-blue-600"
+                                  >
+                                    <ArrowLeftRight className="h-4 w-4" />
+                                    <span>Contraofertar</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      void handleRejectRequest(request);
+                                    }}
+                                    disabled={isProcessingRequest}
+                                    className="text-red-600 focus:bg-red-500/10 focus:text-red-600"
+                                  >
+                                    {isProcessingRequest ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <UserX className="h-4 w-4" />
+                                    )}
+                                    <span>Rechazar</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                            <div className="mt-4 hidden sm:flex sm:flex-row sm:flex-wrap sm:gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto text-green-500 border-green-500 hover:bg-green-500/10 hover:text-green-600"
+                                onClick={() =>
+                                  handleAcceptRequest(request, passengerOffer)
+                                }
+                                disabled={isProcessingRequest}
+                              >
+                                {isProcessingRequest && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                <UserCheck className="mr-1 h-4 w-4" /> Aceptar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto text-blue-500 border-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
+                                onClick={() => openCounterOfferDialog(request)}
+                                disabled={isProcessingRequest}
+                              >
+                                <ArrowLeftRight className="mr-1 h-4 w-4" />
+                                Contraofertar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
+                                onClick={() => handleRejectRequest(request)}
+                                disabled={isProcessingRequest}
+                              >
+                                {isProcessingRequest && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                <UserX className="mr-1 h-4 w-4" /> Rechazar
+                              </Button>
+                            </div>
+                          </>
                         ) : null}
 
                         {request.status === "countered" ? (
@@ -536,19 +617,69 @@ export function DriverRideCard({
                             <p className="text-xs text-muted-foreground">
                               Contraoferta enviada. Esperando respuesta del pasajero.
                             </p>
-                            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                            <div className="sm:hidden">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full justify-between"
+                                    disabled={
+                                      isProcessingRequest && isCounterOfferUpdating
+                                    }
+                                  >
+                                    <span className="font-medium">
+                                      Gestionar solicitud
+                                    </span>
+                                    {isProcessingRequest || isCounterOfferUpdating ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-60">
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      openCounterOfferDialog(request);
+                                    }}
+                                    disabled={isCounterOfferUpdating}
+                                    className="focus:bg-primary/10"
+                                  >
+                                    {isCounterOfferUpdating ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <ArrowLeftRight className="h-4 w-4" />
+                                    )}
+                                    <span>Editar contraoferta</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      void handleRejectRequest(request);
+                                    }}
+                                    disabled={isProcessingRequest}
+                                    className="text-red-600 focus:bg-red-500/10 focus:text-red-600"
+                                  >
+                                    {isProcessingRequest ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <UserX className="h-4 w-4" />
+                                    )}
+                                    <span>Rechazar</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                            <div className="hidden sm:flex sm:flex-row sm:flex-wrap sm:gap-2">
                               <Button
                                 size="sm"
                                 variant="secondary"
                                 className="w-full sm:w-auto"
                                 onClick={() => openCounterOfferDialog(request)}
-                                disabled={
-                                  isSendingCounterOffer &&
-                                  requestToCounter?.id === request.id
-                                }
+                                disabled={isCounterOfferUpdating}
                               >
-                                {isSendingCounterOffer &&
-                                requestToCounter?.id === request.id ? (
+                                {isCounterOfferUpdating ? (
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : null}
                                 <ArrowLeftRight className="mr-1 h-4 w-4" />
@@ -559,9 +690,9 @@ export function DriverRideCard({
                                 variant="outline"
                                 className="w-full sm:w-auto text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
                                 onClick={() => handleRejectRequest(request)}
-                                disabled={processingRequestId === request.id}
+                                disabled={isProcessingRequest}
                               >
-                                {processingRequestId === request.id && (
+                                {isProcessingRequest && (
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
                                 <UserX className="mr-1 h-4 w-4" /> Rechazar
