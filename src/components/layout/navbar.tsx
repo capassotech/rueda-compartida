@@ -16,6 +16,7 @@ import {
   ArrowLeftRight,
   XCircle,
   HandCoins,
+  Loader2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-provider';
@@ -39,6 +40,7 @@ import {
   type NotificationType,
 } from '@/contexts/notification-provider';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const notificationIcons: Record<NotificationType, { Icon: LucideIcon; className: string }> = {
   "new-request": { Icon: HandCoins, className: "text-primary" },
@@ -51,6 +53,8 @@ export function Navbar() {
   const router = useRouter();
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { toast } = useToast();
   const latestNotifications = notifications.slice(0, 10);
 
   const handleNotificationsOpenChange = (open: boolean) => {
@@ -89,11 +93,19 @@ export function Navbar() {
   };
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await signOut(auth);
       router.push('/login');
     } catch (error) {
       console.error("Error al cerrar sesión: ", error);
+      toast({
+        title: "No se pudo cerrar sesión",
+        description: "Intentá nuevamente en unos instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -261,8 +273,16 @@ export function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                      <LogOut className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="cursor-pointer"
+                      disabled={isLoggingOut}
+                    >
+                      {isLoggingOut ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <LogOut className="mr-2 h-4 w-4" />
+                      )}
                       Cerrar Sesión
                     </DropdownMenuItem>
                   </DropdownMenuContent>
