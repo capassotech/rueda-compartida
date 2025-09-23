@@ -41,7 +41,7 @@ export function GoogleAuthButton({ label = "Continuar con Google" }: GoogleAuthB
           title: "Sesión iniciada",
           description: "Bienvenido/a a Rueda Compartida",
         });
-        router.push("/");
+        router.push("/dashboard");
       }
     } catch (error: any) {
       console.error("Error con Google Auth", error);

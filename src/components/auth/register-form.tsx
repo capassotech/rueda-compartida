@@ -57,7 +57,7 @@ export function RegisterForm() {
         title: "Registro Exitoso",
         description: "Tu cuenta ha sido creada.",
       });
-      router.push("/"); // Redirige a inicio o dashboard
+      router.push("/dashboard");
     } catch (error: any) {
       console.error("Error en el registro", error);
       let errorMessage = "No se pudo registrar. Intentalo nuevamente.";
