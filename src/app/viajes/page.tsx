@@ -10,7 +10,10 @@ import { SearchRidesForm } from "@/components/rides/search-rides-form";
 import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { subscribeToAllRides } from "@/lib/firestore-rides";
+import {
+  subscribeToAllRides,
+  type RideSubscriptionFilters,
+} from "@/lib/firestore-rides";
 
 function RideListings() {
   const searchParams = useSearchParams();
@@ -18,26 +21,60 @@ function RideListings() {
   const destination = searchParams.get('destination');
   const date = searchParams.get('date'); // Formato esperado YYYY-MM-DD
 
+  const normalizedOrigin = origin?.trim() || undefined;
+  const normalizedDestination = destination?.trim() || undefined;
+
   const [rides, setRides] = useState<Ride[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = subscribeToAllRides((incomingRides) => {
+    let unsubscribe: (() => void) | undefined;
+
+    if (!date || !normalizedOrigin || !normalizedDestination) {
+      setRides([]);
+      setIsLoading(false);
+
+      return () => {
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      };
+    }
+
+    setIsLoading(true);
+
+    const filters: RideSubscriptionFilters = {
+      date,
+      origin: normalizedOrigin,
+      destination: normalizedDestination,
+    };
+
+    unsubscribe = subscribeToAllRides((incomingRides) => {
       setRides(incomingRides);
       setIsLoading(false);
-    });
+    }, filters);
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [date, normalizedOrigin, normalizedDestination]);
 
   const filteredRides = useMemo(() => {
+    const originQuery = normalizedOrigin?.toLowerCase();
+    const destinationQuery = normalizedDestination?.toLowerCase();
+
     return rides
       .filter((ride) => {
         let matches = true;
-        if (origin && !ride.origin.toLowerCase().includes(origin.toLowerCase())) {
+        if (originQuery && !ride.origin.toLowerCase().includes(originQuery)) {
           matches = false;
         }
-        if (destination && !ride.destination.toLowerCase().includes(destination.toLowerCase())) {
+        if (
+          destinationQuery &&
+          !ride.destination.toLowerCase().includes(destinationQuery)
+        ) {
           matches = false;
         }
         if (date && ride.date !== date) {
@@ -49,10 +86,10 @@ function RideListings() {
       .sort(
         (a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0),
       );
-  }, [rides, origin, destination, date]);
+  }, [rides, normalizedOrigin, normalizedDestination, date]);
 
 
-  if (!origin && !destination && !date) {
+  if (!normalizedOrigin && !normalizedDestination && !date) {
     return (
       <div className="text-center py-10">
         <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
