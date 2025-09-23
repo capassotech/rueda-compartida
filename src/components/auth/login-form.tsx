@@ -53,7 +53,7 @@ export function LoginForm() {
         title: "Inicio de Sesión Exitoso",
         description: "¡Bienvenido de vuelta!",
       });
-      router.push("/"); // Redirige a inicio o dashboard
+      router.push("/dashboard");
     } catch (error: any) {
       console.error("Error en el inicio de sesión", error);
       let errorMessage = "No se pudo iniciar sesión. Verificá tus credenciales.";
