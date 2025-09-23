@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { RideRequest } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,6 +27,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { toLocalDate } from "@/lib/date";
 import {
   acceptRideRequest,
   rejectRideRequest,
@@ -46,6 +49,15 @@ export function PassengerRequestCard({ request }: PassengerRequestCardProps) {
   const [offerValue, setOfferValue] = useState(
     () => (request.offeredPrice ?? request.price ?? 0).toString(),
   );
+
+  const formattedRideDate = useMemo(() => {
+    if (!request.date) {
+      return "N/A";
+    }
+
+    const parsed = toLocalDate(request.date);
+    return parsed ? format(parsed, "PPP", { locale: es }) : request.date;
+  }, [request.date]);
 
   let statusColor: "default" | "secondary" | "destructive" | "outline" | null | undefined = "secondary";
   let StatusIcon = Loader2;
@@ -211,7 +223,7 @@ export function PassengerRequestCard({ request }: PassengerRequestCardProps) {
       <CardContent className="space-y-3">
         <div className="flex items-center text-sm text-muted-foreground">
           <CalendarDays className="mr-2 h-4 w-4 text-primary" />
-          <span>{request.date ? new Date(request.date).toLocaleDateString() : "N/A"}</span>
+          <span>{formattedRideDate}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <Clock className="mr-2 h-4 w-4 text-primary" />

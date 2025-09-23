@@ -70,6 +70,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toLocalDate } from "@/lib/date";
 import {
   acceptRideRequest,
   counterOfferRideRequest,
@@ -79,7 +80,8 @@ import {
 } from "@/lib/firestore-rides";
 import { rideFormSchema, type RideFormValues } from "@/lib/validators/ride";
 import { useToast } from "@/hooks/use-toast";
-import { format, isValid, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface DriverRideCardProps {
   ride: Ride;
@@ -143,8 +145,8 @@ export function DriverRideCard({
   const acceptedRequestCount = acceptedRequests.length;
 
   const formattedDate = useMemo(() => {
-    const parsed = ride.date ? parseISO(ride.date) : null;
-    return parsed && isValid(parsed) ? format(parsed, "PPP") : ride.date;
+    const parsed = ride.date ? toLocalDate(ride.date) : null;
+    return parsed ? format(parsed, "PPP", { locale: es }) : ride.date;
   }, [ride.date]);
 
   const updateRequestState = (updatedRequest: RideRequest) => {
@@ -729,7 +731,7 @@ export function DriverRideCard({
                                 )}
                               >
                                 {field.value ? (
-                                  format(field.value, "PPP")
+                                  format(field.value, "PPP", { locale: es })
                                 ) : (
                                   <span>Seleccioná una fecha</span>
                                 )}
@@ -863,8 +865,8 @@ export function DriverRideCard({
 }
 
 function mapRideToFormValues(ride: Ride): RideFormValues {
-  const parsedDate = ride.date ? parseISO(ride.date) : undefined;
-  const safeDate = parsedDate && isValid(parsedDate) ? parsedDate : new Date();
+  const parsedDate = ride.date ? toLocalDate(ride.date) : null;
+  const safeDate = parsedDate ?? new Date();
 
   return {
     origin: ride.origin ?? "",

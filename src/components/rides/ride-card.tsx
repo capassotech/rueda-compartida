@@ -24,8 +24,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-provider";
 import { requestRide } from "@/lib/firestore-rides";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { toLocalDate } from "@/lib/date";
 
 interface RideCardProps {
   ride: Ride;
@@ -37,6 +40,11 @@ export function RideCard({ ride }: RideCardProps) {
   const [isRequesting, setIsRequesting] = useState(false);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
   const [offerValue, setOfferValue] = useState(() => ride.price.toString());
+
+  const formattedRideDate = useMemo(() => {
+    const parsedDate = toLocalDate(ride.date);
+    return parsedDate ? format(parsedDate, "PPP", { locale: es }) : ride.date;
+  }, [ride.date]);
 
   const handleOpenOfferDialog = () => {
     if (!user) {
@@ -123,7 +131,7 @@ export function RideCard({ ride }: RideCardProps) {
       <CardContent className="space-y-3">
         <div className="flex items-center text-sm text-muted-foreground">
           <CalendarDays className="mr-2 h-4 w-4 text-primary" />
-          <span>{new Date(ride.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          <span>{formattedRideDate}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
           <Clock className="mr-2 h-4 w-4 text-primary" />
