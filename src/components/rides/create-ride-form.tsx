@@ -26,11 +26,14 @@ import { createRide } from "@/lib/firestore-rides";
 import { useAuth } from "@/contexts/auth-provider";
 import { useRouter } from "next/navigation";
 import { rideFormSchema, type RideFormValues } from "@/lib/validators/ride";
+import { toLocalDate } from "@/lib/date";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 export function CreateRideForm() {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  const isDesktop = useMediaQuery("(min-width: 640px)");
 
   const form = useForm<RideFormValues>({
     resolver: zodResolver(rideFormSchema),
@@ -119,35 +122,54 @@ export function CreateRideForm() {
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Fecha</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Seleccioná una fecha</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))} // Fechas pasadas deshabilitadas
-                      initialFocus
+                {isDesktop ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Seleccioná una fecha</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date(new Date().setDate(new Date().getDate() - 1))
+                        } // Fechas pasadas deshabilitadas
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <FormControl>
+                    <Input
+                      type="date"
+                      value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                      min={format(new Date(), "yyyy-MM-dd")}
+                      onChange={(event) => {
+                        const nextValue = toLocalDate(event.target.value);
+                        field.onChange(nextValue ?? undefined);
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
-                  </PopoverContent>
-                </Popover>
+                  </FormControl>
+                )}
                 <FormMessage />
               </FormItem>
             )}

@@ -26,11 +26,26 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toLocalDate } from "@/lib/date";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const searchRidesSchema = z.object({
   origin: z.string().min(1, "El origen es requerido."),
   destination: z.string().min(1, "El destino es requerido."),
-  date: z.date({ required_error: "La fecha es requerida." }),
+  date: z.preprocess(
+    (value) => {
+      if (value instanceof Date) {
+        return value;
+      }
+
+      if (typeof value === "string") {
+        const parsed = toLocalDate(value);
+        return parsed ?? value;
+      }
+
+      return value;
+    },
+    z.date({ required_error: "La fecha es requerida." })
+  ),
 });
 
 type SearchRidesFormValues = z.infer<typeof searchRidesSchema>;
@@ -38,6 +53,7 @@ type SearchRidesFormValues = z.infer<typeof searchRidesSchema>;
 export function SearchRidesForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isDesktop = useMediaQuery("(min-width: 640px)");
 
   const dateParam = searchParams.get("date");
   const parsedDate = dateParam ? toLocalDate(dateParam) : null;
@@ -97,35 +113,54 @@ export function SearchRidesForm() {
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Fecha</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal h-10",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: es })
-                        ) : (
-                          <span>Seleccioná una fecha</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
-                      initialFocus
+                {isDesktop ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal h-10",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP", { locale: es })
+                          ) : (
+                            <span>Seleccioná una fecha</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date(new Date().setDate(new Date().getDate() - 1))
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <FormControl>
+                    <Input
+                      type="date"
+                      value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                      min={format(new Date(), "yyyy-MM-dd")}
+                      onChange={(event) => {
+                        const nextValue = toLocalDate(event.target.value);
+                        field.onChange(nextValue ?? undefined);
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
-                  </PopoverContent>
-                </Popover>
+                  </FormControl>
+                )}
                 <FormMessage />
               </FormItem>
             )}
