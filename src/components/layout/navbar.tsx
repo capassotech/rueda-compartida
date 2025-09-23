@@ -123,19 +123,6 @@ export function Navbar() {
             <span className="text-xl font-bold">Rueda Compartida</span>
           </Link>
           <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap sm:gap-4">
-            <Button variant="ghost" size="sm" asChild className="w-full justify-center sm:w-auto">
-              <Link href="/buscar-viajes">
-                <Search className="mr-2 h-4 w-4" />
-                Buscar Viajes
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild className="w-full justify-center sm:w-auto">
-              <Link href="/crear-viaje">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Ofrecer Viaje
-              </Link>
-            </Button>
-            
             {user ? (
               <>
                 <DropdownMenu
@@ -291,50 +278,72 @@ export function Navbar() {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-                  <Link href="/login">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Iniciar Sesión
+                  <Link href="/login" aria-label="Iniciar sesión">
+                    <LogIn className="h-4 w-4 sm:mr-2" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Iniciar Sesión</span>
                   </Link>
                 </Button>
                 <Button size="sm" asChild className="hidden sm:inline-flex">
-                  <Link href="/register">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Registrate
+                  <Link href="/register" aria-label="Registrate">
+                    <UserPlus className="h-4 w-4 sm:mr-2" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Registrate</span>
                   </Link>
                 </Button>
               </>
             )}
-            {!user && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild className="sm:hidden">
-                  <Button variant="ghost" size="icon" aria-label="Abrir el menú de navegación">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={8} className="w-56 space-y-1 p-2 sm:hidden">
-                  <DropdownMenuItem asChild className="p-0">
-                    <Link
-                      href="/login"
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
-                      aria-label="Ir a la página para iniciar sesión"
-                    >
-                      <LogIn className="h-4 w-4" />
-                      Iniciar Sesión
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="p-0">
-                    <Link
-                      href="/register"
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
-                      aria-label="Ir a la página para registrarse"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      Registrate
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild className="sm:hidden">
+                <Button variant="ghost" size="icon" aria-label="Abrir menú">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={8} className="w-56 space-y-1 p-2 sm:hidden">
+                <DropdownMenuItem asChild className="p-0">
+                  <Link
+                    href="/buscar-viajes"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+                    aria-label="Ir a la página para buscar viajes disponibles"
+                  >
+                    <Search className="h-4 w-4" />
+                    Buscar Viajes
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="p-0">
+                  <Link
+                    href="/crear-viaje"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+                    aria-label="Ir a la página para ofrecer un nuevo viaje"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Ofrecer Viaje
+                  </Link>
+                </DropdownMenuItem>
+                {!user && (
+                  <>
+                    <DropdownMenuItem asChild className="p-0">
+                      <Link
+                        href="/login"
+                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+                        aria-label="Ir a la página para iniciar sesión"
+                      >
+                        <LogIn className="h-4 w-4" />
+                        Iniciar Sesión
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="p-0">
+                      <Link
+                        href="/register"
+                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+                        aria-label="Ir a la página para registrarse"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        Registrate
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
