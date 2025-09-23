@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -21,19 +22,35 @@ import {
 } from "@/components/ui/popover";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { createRide } from "@/lib/firestore-rides";
 import { useAuth } from "@/contexts/auth-provider";
 import { useRouter } from "next/navigation";
 import { rideFormSchema, type RideFormValues } from "@/lib/validators/ride";
-import { toLocalDate } from "@/lib/date";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 export function CreateRideForm() {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 640px)");
+  const [isMobileDatePickerOpen, setIsMobileDatePickerOpen] =
+    React.useState(false);
+
+  React.useEffect(() => {
+    if (isDesktop) {
+      setIsMobileDatePickerOpen(false);
+    }
+  }, [isDesktop]);
 
   const form = useForm<RideFormValues>({
     resolver: zodResolver(rideFormSchema),
@@ -134,7 +151,7 @@ export function CreateRideForm() {
                           )}
                         >
                           {field.value ? (
-                            format(field.value, "PPP")
+                            format(field.value, "PPP", { locale: es })
                           ) : (
                             <span>Seleccioná una fecha</span>
                           )}
@@ -155,20 +172,66 @@ export function CreateRideForm() {
                     </PopoverContent>
                   </Popover>
                 ) : (
-                  <FormControl>
-                    <Input
-                      type="date"
-                      value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
-                      min={format(new Date(), "yyyy-MM-dd")}
-                      onChange={(event) => {
-                        const nextValue = toLocalDate(event.target.value);
-                        field.onChange(nextValue ?? undefined);
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
+                  <>
+                    <FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                        onClick={() => setIsMobileDatePickerOpen(true)}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: es })
+                        ) : (
+                          <span>Seleccioná una fecha</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                    <Sheet
+                      open={isMobileDatePickerOpen}
+                      onOpenChange={setIsMobileDatePickerOpen}
+                    >
+                      <SheetContent
+                        side="bottom"
+                        className="flex h-[100dvh] flex-col sm:max-w-md"
+                      >
+                        <SheetHeader>
+                          <SheetTitle>Seleccioná una fecha</SheetTitle>
+                        </SheetHeader>
+                        <div className="flex-1 overflow-y-auto pb-6">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              if (!date) {
+                                return;
+                              }
+                              field.onChange(date);
+                              setIsMobileDatePickerOpen(false);
+                            }}
+                            disabled={(date) =>
+                              date <
+                              new Date(
+                                new Date().setDate(new Date().getDate() - 1)
+                              )
+                            }
+                            initialFocus
+                          />
+                        </div>
+                        <SheetFooter className="pt-2">
+                          <SheetClose asChild>
+                            <Button type="button" variant="secondary">
+                              Cerrar
+                            </Button>
+                          </SheetClose>
+                        </SheetFooter>
+                      </SheetContent>
+                    </Sheet>
+                  </>
                 )}
                 <FormMessage />
               </FormItem>
