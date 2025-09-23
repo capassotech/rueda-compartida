@@ -379,7 +379,7 @@ export function DriverRideCard({
       )}
     >
       <CardHeader>
-        <CardTitle className="text-xl flex justify-between items-center">
+        <CardTitle className="text-xl flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span>
             {ride.origin} a {ride.destination}
           </span>
@@ -444,7 +444,7 @@ export function DriverRideCard({
                             "border-primary/80 ring-2 ring-primary/40 bg-primary/5",
                         )}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
                           <div>
                             <p className="font-semibold">
                               {request.passengerName}
@@ -491,11 +491,11 @@ export function DriverRideCard({
                         </div>
 
                         {request.status === "pending" ? (
-                          <div className="mt-4 flex flex-wrap gap-2">
+                          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-green-500 border-green-500 hover:bg-green-500/10 hover:text-green-600"
+                              className="w-full sm:w-auto text-green-500 border-green-500 hover:bg-green-500/10 hover:text-green-600"
                               onClick={() =>
                                 handleAcceptRequest(request, passengerOffer)
                               }
@@ -509,7 +509,7 @@ export function DriverRideCard({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-blue-500 border-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
+                              className="w-full sm:w-auto text-blue-500 border-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
                               onClick={() => openCounterOfferDialog(request)}
                               disabled={processingRequestId === request.id}
                             >
@@ -519,7 +519,7 @@ export function DriverRideCard({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
+                              className="w-full sm:w-auto text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
                               onClick={() => handleRejectRequest(request)}
                               disabled={processingRequestId === request.id}
                             >
@@ -536,10 +536,11 @@ export function DriverRideCard({
                             <p className="text-xs text-muted-foreground">
                               Contraoferta enviada. Esperando respuesta del pasajero.
                             </p>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                               <Button
                                 size="sm"
                                 variant="secondary"
+                                className="w-full sm:w-auto"
                                 onClick={() => openCounterOfferDialog(request)}
                                 disabled={
                                   isSendingCounterOffer &&
@@ -556,7 +557,7 @@ export function DriverRideCard({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
+                                className="w-full sm:w-auto text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-600"
                                 onClick={() => handleRejectRequest(request)}
                                 disabled={processingRequestId === request.id}
                               >
