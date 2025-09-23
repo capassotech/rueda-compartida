@@ -16,6 +16,7 @@ import {
   updateDoc,
   writeBatch,
   where,
+  type QueryConstraint,
   type DocumentData,
   type DocumentSnapshot,
   type QueryDocumentSnapshot,
@@ -512,12 +513,32 @@ export function subscribeToPassengerRequests(
   });
 }
 
-export function subscribeToAllRides(callback: (rides: Ride[]) => void) {
-  const ridesQuery = query(
-    collection(db, RIDES_COLLECTION),
-    orderBy("createdAt", "desc"),
-    limit(100),
-  );
+export type RideSubscriptionFilters = Partial<
+  Pick<Ride, "date" | "origin" | "destination">
+>;
+
+export function subscribeToAllRides(
+  callback: (rides: Ride[]) => void,
+  filters: RideSubscriptionFilters = {},
+) {
+  const constraints: QueryConstraint[] = [];
+
+  if (filters.date) {
+    constraints.push(where("date", "==", filters.date));
+  }
+
+  if (filters.origin) {
+    constraints.push(where("origin", "==", filters.origin));
+  }
+
+  if (filters.destination) {
+    constraints.push(where("destination", "==", filters.destination));
+  }
+
+  constraints.push(orderBy("createdAt", "desc"));
+  constraints.push(limit(100));
+
+  const ridesQuery = query(collection(db, RIDES_COLLECTION), ...constraints);
 
   return onSnapshot(ridesQuery, (snapshot) => {
     const rides = snapshot.docs.map((docSnap) => mapRideSnapshot(docSnap));
