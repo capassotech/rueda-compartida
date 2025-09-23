@@ -13,6 +13,13 @@ import type { Ride, RideRequest } from "@/types";
 import { useAuthGuard } from "@/hooks/use-auth-guard";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   subscribeToDriverRides,
   subscribeToDriverRequests,
 } from "@/lib/firestore-rides";
@@ -320,6 +327,10 @@ export default function DriverDashboardPage() {
     ? formatDistanceToNow(driverStats.latestActivity, { addSuffix: true, locale: es })
     : null;
 
+  const handleFilterChange = (value: RideFilter) => {
+    setSelectedFilter(value);
+  };
+
   const filterOptions = useMemo(
     () => [
       { value: "all" as const, label: "Todos", count: driverStats.totalRides },
@@ -475,20 +486,37 @@ export default function DriverDashboardPage() {
         </section>
 
         <section className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:space-y-0">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Viajes publicados</h2>
               <p className="text-sm text-muted-foreground">
                 Gestioná tus viajes y respondé las solicitudes desde un solo lugar.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="sm:hidden">
+              <Select
+                value={selectedFilter}
+                onValueChange={(value) => handleFilterChange(value as RideFilter)}
+              >
+                <SelectTrigger aria-label="Filtrar viajes publicados" className="w-full">
+                  <SelectValue placeholder="Seleccioná un filtro" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {`${option.label} (${option.count})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="hidden flex-wrap gap-2 sm:flex">
               {filterOptions.map((option) => (
                 <Button
                   key={option.value}
                   size="sm"
                   variant={selectedFilter === option.value ? "default" : "outline"}
-                  onClick={() => setSelectedFilter(option.value)}
+                  onClick={() => handleFilterChange(option.value)}
                 >
                   {option.label}
                   <span className="ml-1 text-xs text-muted-foreground">
