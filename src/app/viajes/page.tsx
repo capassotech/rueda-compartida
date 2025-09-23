@@ -10,15 +10,11 @@ import { SearchRidesForm } from "@/components/rides/search-rides-form";
 import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-<<<<<<< HEAD
 import {
   subscribeToAllRides,
   type RideSubscriptionFilters,
 } from "@/lib/firestore-rides";
-=======
-import { subscribeToAllRides } from "@/lib/firestore-rides";
-import { getLocalDepartureDate } from "@/lib/date";
->>>>>>> 5fce9c4609ee7972feff195216ca87b61032ffb4
+import { getLocalDepartureDate } from '@/lib/date';
 
 function RideListings() {
   const searchParams = useSearchParams();
