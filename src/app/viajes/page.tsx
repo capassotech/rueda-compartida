@@ -11,6 +11,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { subscribeToAllRides } from "@/lib/firestore-rides";
+import { getLocalDepartureDate } from "@/lib/date";
 
 function RideListings() {
   const searchParams = useSearchParams();
@@ -46,9 +47,25 @@ function RideListings() {
         return matches;
       })
       .filter((ride) => ride.availableSeats > 0)
-      .sort(
-        (a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0),
-      );
+      .sort((a, b) => {
+        const departureA = getLocalDepartureDate(a)?.getTime() ?? null;
+        const departureB = getLocalDepartureDate(b)?.getTime() ?? null;
+
+        if (departureA !== departureB) {
+          if (departureA === null) {
+            return 1;
+          }
+          if (departureB === null) {
+            return -1;
+          }
+          return departureA - departureB;
+        }
+
+        const createdAtA = a.createdAt?.getTime() ?? 0;
+        const createdAtB = b.createdAt?.getTime() ?? 0;
+
+        return createdAtA - createdAtB;
+      });
   }, [rides, origin, destination, date]);
 
 
