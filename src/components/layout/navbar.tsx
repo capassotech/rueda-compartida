@@ -291,22 +291,22 @@ export function Navbar() {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-                  <Link href="/login">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Iniciar Sesión
+                  <Link href="/login" aria-label="Iniciar sesión">
+                    <LogIn className="h-4 w-4 sm:mr-2" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Iniciar Sesión</span>
                   </Link>
                 </Button>
                 <Button size="sm" asChild className="hidden sm:inline-flex">
-                  <Link href="/register">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Registrate
+                  <Link href="/register" aria-label="Registrate">
+                    <UserPlus className="h-4 w-4 sm:mr-2" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">Registrate</span>
                   </Link>
                 </Button>
               </>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild className="sm:hidden">
-                <Button variant="ghost" size="icon" aria-label="Abrir el menú de navegación">
+                <Button variant="ghost" size="icon" aria-label="Abrir menú">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
                 </Button>
               </DropdownMenuTrigger>
