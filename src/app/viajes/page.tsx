@@ -77,6 +77,7 @@ function RideListings() {
   }, [date, normalizedOrigin, normalizedDestination]);
 
   const filteredRides = useMemo(() => {
+    const now = new Date();
     const originQuery = normalizedOrigin?.toLowerCase();
     const destinationQuery = normalizedDestination?.toLowerCase();
 
@@ -96,6 +97,15 @@ function RideListings() {
           matches = false;
         }
         return matches;
+      })
+      .filter((ride) => {
+        const departure = getLocalDepartureDate(ride);
+
+        if (!departure) {
+          return true;
+        }
+
+        return departure.getTime() >= now.getTime();
       })
       .filter((ride) => ride.availableSeats > 0)
       .sort((a, b) => {
@@ -120,6 +130,7 @@ function RideListings() {
   }, [rides, normalizedOrigin, normalizedDestination, date]);
 
   const suggestedRides = useMemo(() => {
+    const now = new Date();
     if (!normalizedOrigin || !normalizedDestination || !date) {
       return [];
     }
@@ -146,6 +157,15 @@ function RideListings() {
       .filter((ride) => {
         const rideIdentifier = ride.id ?? `${ride.driverUid}-${ride.date}-${ride.time}`;
         return ride.availableSeats > 0 && !filteredIds.has(rideIdentifier);
+      })
+      .filter((ride) => {
+        const departure = getLocalDepartureDate(ride);
+
+        if (!departure) {
+          return true;
+        }
+
+        return departure.getTime() >= now.getTime();
       })
       .map((ride) => {
         const originLower = ride.origin.toLowerCase();
