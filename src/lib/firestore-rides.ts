@@ -29,6 +29,43 @@ const REQUESTS_COLLECTION = "rideRequests";
 
 export type CreateRideInput = Omit<Ride, "id" | "createdAt">;
 
+function mapRideDocument(snapshot: DocumentSnapshot<DocumentData>): Ride | null {
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const data = snapshot.data() ?? {};
+
+  return {
+    id: snapshot.id,
+    driverUid: typeof data.driverUid === "string" ? data.driverUid : "",
+    driverName: typeof data.driverName === "string" ? data.driverName : "",
+    origin: typeof data.origin === "string" ? data.origin : "",
+    destination:
+      typeof data.destination === "string" ? data.destination : "",
+    date: typeof data.date === "string" ? data.date : "",
+    time: typeof data.time === "string" ? data.time : "",
+    availableSeats: Number(data.availableSeats ?? 0),
+    price: Number(data.price ?? 0),
+    createdAt:
+      data.createdAt && typeof data.createdAt.toDate === "function"
+        ? data.createdAt.toDate()
+        : undefined,
+  };
+}
+
+export async function getRideById(rideId: string): Promise<Ride | null> {
+  try {
+    const rideRef = doc(db, RIDES_COLLECTION, rideId);
+    const rideSnap = await getDoc(rideRef);
+
+    return mapRideDocument(rideSnap);
+  } catch (error) {
+    console.error("Error al obtener el viaje", error);
+    return null;
+  }
+}
+
 export async function createRide(input: CreateRideInput) {
   try {
     const docRef = await addDoc(collection(db, RIDES_COLLECTION), {

@@ -20,6 +20,7 @@ import {
   CircleDollarSign,
   CheckCircle,
   AlertTriangle,
+  Share2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth-provider";
@@ -32,9 +33,10 @@ import { toLocalDate } from "@/lib/date";
 
 interface RideCardProps {
   ride: Ride;
+  showShareButton?: boolean;
 }
 
-export function RideCard({ ride }: RideCardProps) {
+export function RideCard({ ride, showShareButton = true }: RideCardProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isRequesting, setIsRequesting] = useState(false);
@@ -122,6 +124,75 @@ export function RideCard({ ride }: RideCardProps) {
     setIsRequesting(false);
   };
 
+  const handleShareRide = async () => {
+    if (!ride.id) {
+      toast({
+        title: "No se puede compartir",
+        description: "El viaje no tiene un identificador válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const appBaseUrl = origin || "https://rueda-compartida.web.app";
+      const shareUrl = new URL(`/viajes/${ride.id}`, appBaseUrl);
+
+      shareUrl.searchParams.set("origin", ride.origin);
+      shareUrl.searchParams.set("destination", ride.destination);
+      shareUrl.searchParams.set("date", ride.date);
+      shareUrl.searchParams.set("time", ride.time);
+      shareUrl.searchParams.set("price", ride.price.toString());
+      shareUrl.searchParams.set(
+        "availableSeats",
+        ride.availableSeats.toString(),
+      );
+      if (ride.driverName) {
+        shareUrl.searchParams.set("driverName", ride.driverName);
+      }
+
+      const shareTitle = `${ride.origin} a ${ride.destination}`;
+      const shareText = `Salida el ${formattedRideDate} a las ${ride.time}. ${ride.availableSeats} lugares disponibles a $${ride.price.toFixed(2)}.`;
+
+      if (navigator.share) {
+        await navigator.share({
+          title: `Viaje compartido: ${shareTitle}`,
+          text: shareText,
+          url: shareUrl.toString(),
+        });
+        toast({
+          title: "Enlace compartido",
+          description: "Tu viaje se abrió en el diálogo de compartir.",
+        });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl.toString());
+        toast({
+          title: "Enlace copiado",
+          description: "Pegá el enlace para invitar pasajeros a tu viaje.",
+        });
+      } else {
+        toast({
+          title: "No se pudo compartir",
+          description: "Tu dispositivo no permite compartir enlaces automáticamente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+
+      console.error("Error al compartir el viaje", error);
+      toast({
+        title: "No se pudo compartir",
+        description: "Ocurrió un error al generar el enlace del viaje.",
+        variant: "destructive",
+        action: <AlertTriangle className="text-red-500" />,
+      });
+    }
+  };
+
   return (
     <Card className="w-full shadow-lg hover:shadow-primary/20 transition-shadow">
       <CardHeader>
@@ -154,20 +225,31 @@ export function RideCard({ ride }: RideCardProps) {
           <span>${ride.price.toFixed(2)}</span>
         </div>
       </CardContent>
-      <CardFooter>
-        {user?.uid !== ride.driverUid ? (
+      <CardFooter className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex w-full sm:flex-1">
+          {user?.uid !== ride.driverUid ? (
+            <Button
+              className="w-full"
+              onClick={handleOpenOfferDialog}
+              disabled={ride.availableSeats === 0}
+            >
+              {ride.availableSeats > 0
+                ? "Solicitar Viaje"
+                : "No Hay Lugares Disponibles"}
+            </Button>
+          ) : (
+            <Button className="w-full" disabled variant="outline">
+              Este es tu viaje
+            </Button>
+          )}
+        </div>
+        {showShareButton && (
           <Button
-            className="w-full"
-            onClick={handleOpenOfferDialog}
-            disabled={ride.availableSeats === 0}
+            className="w-full sm:w-auto"
+            onClick={handleShareRide}
+            variant="secondary"
           >
-            {ride.availableSeats > 0
-              ? "Solicitar Viaje"
-              : "No Hay Lugares Disponibles"}
-          </Button>
-        ) : (
-          <Button className="w-full" disabled variant="outline">
-            Este es tu viaje
+            <Share2 className="mr-2 h-4 w-4" /> Compartir
           </Button>
         )}
       </CardFooter>
