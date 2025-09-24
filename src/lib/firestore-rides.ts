@@ -560,6 +560,10 @@ export function subscribeToAllRides(
 ) {
   const constraints: QueryConstraint[] = [];
 
+  const hasFilters = Boolean(
+    filters.date ?? filters.origin ?? filters.destination,
+  );
+
   if (filters.date) {
     constraints.push(where("date", "==", filters.date));
   }
@@ -572,14 +576,21 @@ export function subscribeToAllRides(
     constraints.push(where("destination", "==", filters.destination));
   }
 
-  constraints.push(orderBy("createdAt", "desc"));
-  constraints.push(limit(100));
+  if (!hasFilters) {
+    constraints.push(orderBy("createdAt", "desc"));
+    constraints.push(limit(100));
+  }
 
   const ridesQuery = query(collection(db, RIDES_COLLECTION), ...constraints);
 
   return onSnapshot(ridesQuery, (snapshot) => {
     const rides = snapshot.docs.map((docSnap) => mapRideSnapshot(docSnap));
-    callback(rides);
+
+    const sortedRides = rides.sort(
+      (a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0),
+    );
+
+    callback(hasFilters ? sortedRides.slice(0, 100) : sortedRides);
   });
 }
 
