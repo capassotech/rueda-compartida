@@ -12,6 +12,10 @@ type RideSharePageProps = {
   searchParams: Record<string, string | string[] | undefined>;
 };
 
+export function generateStaticParams(): RideSharePageProps["params"][] {
+  return [];
+}
+
 function getSingleValue(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) {
     return value[0];
