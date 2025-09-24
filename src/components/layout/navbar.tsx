@@ -4,19 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  ArrowLeftRight,
+  Bell,
   Car,
+  HandCoins,
+  LayoutDashboard,
+  Loader2,
   LogIn,
   LogOut,
+  Menu,
   PlusCircle,
   Search,
   User,
+  UserCog,
   UserPlus,
-  LayoutDashboard,
-  Bell,
-  ArrowLeftRight,
   XCircle,
-  HandCoins,
-  Loader2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-provider';
@@ -41,6 +43,14 @@ import {
 } from '@/contexts/notification-provider';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 const notificationIcons: Record<NotificationType, { Icon: LucideIcon; className: string }> = {
   "new-request": { Icon: HandCoins, className: "text-primary" },
@@ -114,6 +124,29 @@ export function Navbar() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
 
+  const mainMenuItems: { label: string; href: string; icon: LucideIcon }[] = [
+    {
+      label: 'Panel del Conductor',
+      href: '/dashboard/conductor',
+      icon: LayoutDashboard,
+    },
+    {
+      label: 'Panel del Pasajero',
+      href: '/dashboard/pasajero',
+      icon: User,
+    },
+    {
+      label: 'Buscar Viajes',
+      href: '/buscar-viajes',
+      icon: Search,
+    },
+    {
+      label: 'Crear Viaje',
+      href: '/crear-viaje',
+      icon: PlusCircle,
+    },
+  ];
+
   return (
     <nav className="bg-card shadow-md">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -123,6 +156,73 @@ export function Navbar() {
             <span className="text-xl font-bold">Rueda Compartida</span>
           </Link>
           <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap sm:gap-4">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full"
+                  aria-label="Abrir menú de navegación"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex h-full flex-col gap-6 p-6">
+                <SheetHeader className="text-left">
+                  <SheetTitle className="flex items-center gap-2 text-lg font-semibold">
+                    <Car className="h-5 w-5" />
+                    Navegación
+                  </SheetTitle>
+                </SheetHeader>
+                {user ? (
+                  <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'Usuario'} />
+                      <AvatarFallback>{getInitials(user.displayName || user.email)}</AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-tight">
+                        {user.displayName || 'Usuario'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                ) : null}
+                <nav className="flex-1 space-y-1">
+                  {mainMenuItems.map(({ href, label, icon: Icon }) => (
+                    <SheetClose asChild key={href}>
+                      <Link
+                        href={href}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-base font-medium transition-colors hover:bg-muted hover:text-primary"
+                      >
+                        <Icon className="h-5 w-5" />
+                        {label}
+                      </Link>
+                    </SheetClose>
+                  ))}
+                </nav>
+                {!user ? (
+                  <div className="space-y-2">
+                    <SheetClose asChild>
+                      <Button asChild variant="outline" className="w-full">
+                        <Link href="/login">
+                          <LogIn className="mr-2 h-4 w-4" />
+                          Iniciar Sesión
+                        </Link>
+                      </Button>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Button asChild className="w-full">
+                        <Link href="/register">
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Registrate
+                        </Link>
+                      </Button>
+                    </SheetClose>
+                  </div>
+                ) : null}
+              </SheetContent>
+            </Sheet>
             {user ? (
               <>
                 <DropdownMenu
@@ -224,7 +324,7 @@ export function Navbar() {
                         })}
                       </div>
                     )}
-                  </DropdownMenuContent>
+                    </DropdownMenuContent>
                 </DropdownMenu>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -248,15 +348,9 @@ export function Navbar() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard/conductor">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Panel del Conductor
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/pasajero">
-                        <User className="mr-2 h-4 w-4" />
-                        Panel del Pasajero
+                      <Link href="/mi-perfil">
+                        <UserCog className="mr-2 h-4 w-4" />
+                        Mi perfil
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -291,59 +385,6 @@ export function Navbar() {
                 </Button>
               </>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild className="sm:hidden">
-                <Button variant="ghost" size="icon" aria-label="Abrir menú">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={8} className="w-56 space-y-1 p-2 sm:hidden">
-                <DropdownMenuItem asChild className="p-0">
-                  <Link
-                    href="/buscar-viajes"
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
-                    aria-label="Ir a la página para buscar viajes disponibles"
-                  >
-                    <Search className="h-4 w-4" />
-                    Buscar Viajes
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="p-0">
-                  <Link
-                    href="/crear-viaje"
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
-                    aria-label="Ir a la página para ofrecer un nuevo viaje"
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                    Ofrecer Viaje
-                  </Link>
-                </DropdownMenuItem>
-                {!user && (
-                  <>
-                    <DropdownMenuItem asChild className="p-0">
-                      <Link
-                        href="/login"
-                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
-                        aria-label="Ir a la página para iniciar sesión"
-                      >
-                        <LogIn className="h-4 w-4" />
-                        Iniciar Sesión
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="p-0">
-                      <Link
-                        href="/register"
-                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
-                        aria-label="Ir a la página para registrarse"
-                      >
-                        <UserPlus className="h-4 w-4" />
-                        Registrate
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </div>
