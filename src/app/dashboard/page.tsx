@@ -250,11 +250,36 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                 Hola, {greetingName}! 👋
               </h1>
-              <p className="text-sm text-muted-foreground sm:text-base">
-                Tené a mano un resumen de tus viajes confirmados y las solicitudes pendientes que necesitan tu atención.
-              </p>
             </div>
           </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {quickActions.map((action) => (
+            <Card
+              key={action.title}
+              className="flex h-full flex-col justify-between border border-border/60 bg-background/70 shadow-sm"
+            >
+              <CardHeader className="flex flex-row items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <action.icon className="h-5 w-5" />
+                </div>
+                <div className="space-y-2">
+                  <CardTitle className="text-lg font-semibold leading-tight text-foreground">
+                    {action.title}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    {action.description}
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Button asChild className="w-full">
+                  <Link href={action.href}>{action.label}</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </section>
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -357,34 +382,6 @@ export default function DashboardPage() {
               </Button>
             </CardFooter>
           </Card>
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {quickActions.map((action) => (
-            <Card
-              key={action.title}
-              className="flex h-full flex-col justify-between border border-border/60 bg-background/70 shadow-sm"
-            >
-              <CardHeader className="flex flex-row items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <action.icon className="h-5 w-5" />
-                </div>
-                <div className="space-y-2">
-                  <CardTitle className="text-lg font-semibold leading-tight text-foreground">
-                    {action.title}
-                  </CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground">
-                    {action.description}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <Button asChild className="w-full">
-                  <Link href={action.href}>{action.label}</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
         </section>
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
